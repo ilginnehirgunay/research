@@ -1,0 +1,2862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>reSEARCH — R&D Archive OS (2022–2025)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Inter & JetBrains Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ==========================================================================
+       DESIGN TOKENS & MACOS 27 LIQUID GLASS FINDER SYSTEM (DARK MODE)
+       ========================================================================== */
+    :root {
+      --bg-canvas: #000000;
+      --window-bg: #1E1E20;
+      --column-bg: #1B1B1D;
+      --inspector-bg: #171719;
+      --glass-pill-bg: rgba(255, 255, 255, 0.055);
+      --glass-pill-hover: rgba(255, 255, 255, 0.095);
+      --glass-pill-border: rgba(255, 255, 255, 0.11);
+      --hairline: rgba(255, 255, 255, 0.085);
+      --hairline-strong: rgba(255, 255, 255, 0.15);
+      --accent-blue: #0A60FF;
+      --accent-blue-text: #4DA3FF;
+      --text-primary: #F2F2F7;
+      --text-secondary: #98989F;
+      --text-tertiary: #636369;
+      --traffic-close: #FF5F56;
+      --traffic-min: #FFBD2E;
+      --traffic-max: #27C93F;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-canvas);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", sans-serif;
+      color: var(--text-primary);
+      user-select: none;
+    }
+
+    .font-mono-tech {
+      font-family: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ==========================================================================
+       PITCH-BLACK VIEWPORT & MACOS 27 LIQUID GLASS FINDER WINDOW
+       ========================================================================== */
+    #desktop-viewport {
+      width: 100vw;
+      height: 100vh;
+      background-color: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      overflow: hidden;
+    }
+
+    #window-finder {
+      position: relative;
+      width: min(1140px, 92vw);
+      height: min(690px, 88vh);
+      background: linear-gradient(180deg, #222225 0%, #1B1B1D 100%);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      box-shadow:
+        0 36px 100px rgba(0, 0, 0, 0.95),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16),
+        inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: width 0.24s cubic-bezier(0.16, 1, 0.3, 1), height 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #window-finder.expanded-window {
+      width: min(1440px, 97vw);
+      height: 94vh;
+    }
+
+    /* Liquid Glass Floating Toolbar Pills */
+    .liquid-pill {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .liquid-pill-active {
+      background: rgba(255, 255, 255, 0.11);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.22);
+      color: #FFFFFF;
+    }
+
+    /* Traffic Lights */
+    .traffic-lights {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .traffic-btn {
+      width: 12.5px;
+      height: 12.5px;
+      border-radius: 9999px;
+      border: 0.5px solid rgba(0, 0, 0, 0.28);
+      box-shadow: inset 0 0.5px 0.5px rgba(255, 255, 255, 0.28);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      cursor: default;
+    }
+
+    .traffic-btn svg {
+      opacity: 0;
+      transition: opacity 0.12s ease;
+    }
+
+    .traffic-lights:hover .traffic-btn svg {
+      opacity: 1;
+    }
+
+    .traffic-close { background-color: var(--traffic-close); }
+    .traffic-min   { background-color: var(--traffic-min); }
+    .traffic-max   { background-color: var(--traffic-max); }
+
+    /* macOS Miller Column Divider + Bottom Resize Grabber Pill */
+    .miller-col {
+      position: relative;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .miller-col::after {
+      content: "";
+      position: absolute;
+      right: -3.5px;
+      bottom: 6px;
+      width: 6px;
+      height: 13px;
+      border-radius: 9999px;
+      background-color: #2B2B2E;
+      border: 0.5px solid rgba(255, 255, 255, 0.14);
+      background-image: linear-gradient(
+        to right,
+        transparent 1.5px,
+        rgba(255, 255, 255, 0.36) 1.5px,
+        rgba(255, 255, 255, 0.36) 2.3px,
+        transparent 2.3px,
+        transparent 3.4px,
+        rgba(255, 255, 255, 0.36) 3.4px,
+        rgba(255, 255, 255, 0.36) 4.2px,
+        transparent 4.2px
+      );
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* ==========================================================================
+       CUSTOM MACOS DARK SCROLLBARS
+       ========================================================================== */
+    .mac-scroll::-webkit-scrollbar {
+      width: 7px;
+      height: 8px;
+    }
+    .mac-scroll::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.18);
+      border-radius: 9999px;
+    }
+    .mac-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.32);
+      border-radius: 9999px;
+      border: 1.5px solid transparent;
+      background-clip: content-box;
+    }
+    .mac-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.5);
+      border: 1.5px solid transparent;
+      background-clip: content-box;
+    }
+
+    /* Selectable text inside Engineering Logs & Specs */
+    .selectable-text {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+  </style>
+</head>
+<body>
+  <div id="desktop-viewport">
+
+    <!-- ======================================================================
+         1. CENTERED MACOS 27 FINDER WINDOW ("reSEARCH")
+         ====================================================================== -->
+    <section id="window-finder" aria-label="reSEARCH R&D Archive Finder">
+      <!-- Top Seamless macOS 27 Liquid Glass Toolbar (No Sidebar, Minimal Controls) -->
+      <header class="h-[54px] px-4 pt-1 flex items-center justify-between gap-3 shrink-0 bg-transparent">
+        <!-- Left: Traffic Lights + Back/Forward Glass Pill + Active Folder Title -->
+        <div class="flex items-center gap-3.5 min-w-0">
+          <div class="traffic-lights pl-0.5">
+            <button id="btn-traffic-close" class="traffic-btn traffic-close" title="Reset to reSEARCH Root">
+              <svg width="6" height="6" viewBox="0 0 8 8" stroke="#4D0000" stroke-width="1.5" stroke-linecap="round"><line x1="1.5" y1="1.5" x2="6.5" y2="6.5"/><line x1="6.5" y1="1.5" x2="1.5" y2="6.5"/></svg>
+            </button>
+            <button id="btn-traffic-min" class="traffic-btn traffic-min" title="Clear Search & Close Quick Look">
+              <svg width="6" height="6" viewBox="0 0 8 8" stroke="#5A3E00" stroke-width="1.5" stroke-linecap="round"><line x1="1.5" y1="4" x2="6.5" y2="4"/></svg>
+            </button>
+            <button id="btn-traffic-max" class="traffic-btn traffic-max" title="Toggle Expanded Window">
+              <svg width="6" height="6" viewBox="0 0 8 8" stroke="#004D0F" stroke-width="1.4" stroke-linecap="round"><line x1="4" y1="1.5" x2="4" y2="6.5"/><line x1="1.5" y1="4" x2="6.5" y2="4"/></svg>
+            </button>
+          </div>
+
+          <!-- Back (<) / Forward (>) Liquid Glass Capsule -->
+          <div class="liquid-pill flex items-center rounded-full p-0.5 h-[32px]">
+            <button id="btn-nav-back" disabled title="Back"
+              class="w-7 h-7 rounded-full flex items-center justify-center text-white/85 hover:bg-white/[0.08] disabled:opacity-30 disabled:pointer-events-none transition-colors">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="w-[1px] h-4 bg-white/[0.11]"></div>
+            <button id="btn-nav-forward" disabled title="Forward"
+              class="w-7 h-7 rounded-full flex items-center justify-center text-white/85 hover:bg-white/[0.08] disabled:opacity-30 disabled:pointer-events-none transition-colors">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+
+          <!-- Active Folder Title -->
+          <h1 id="finder-window-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-white/95 truncate">
+            reSEARCH
+          </h1>
+        </div>
+
+        <!-- Right: View Mode Liquid Glass Pill + Search Liquid Glass Capsule -->
+        <div class="flex items-center gap-2.5 shrink-0">
+          <!-- View Mode Segmented Glass Pill (Icons / List / Columns) -->
+          <div class="liquid-pill flex items-center gap-0.5 p-0.5 rounded-full h-[32px]" role="group" aria-label="View Mode">
+            <button data-view-mode="icons" title="Icon Grid View"
+              class="view-mode-btn w-7 h-7 rounded-full flex items-center justify-center text-white/60 hover:text-white border border-transparent transition-all">
+              <svg width="13.5" height="13.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35">
+                <rect x="2.5" y="2.5" width="4.5" height="4.5" rx="1"/>
+                <rect x="9" y="2.5" width="4.5" height="4.5" rx="1"/>
+                <rect x="2.5" y="9" width="4.5" height="4.5" rx="1"/>
+                <rect x="9" y="9" width="4.5" height="4.5" rx="1"/>
+              </svg>
+            </button>
+            <div class="w-[1px] h-3.5 bg-white/[0.09]"></div>
+            <button data-view-mode="list" title="Chronological List View"
+              class="view-mode-btn w-7 h-7 rounded-full flex items-center justify-center text-white/60 hover:text-white border border-transparent transition-all">
+              <svg width="13.5" height="13.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round">
+                <line x1="2.5" y1="4.2" x2="13.5" y2="4.2"/>
+                <line x1="2.5" y1="8" x2="13.5" y2="8"/>
+                <line x1="2.5" y1="11.8" x2="13.5" y2="11.8"/>
+              </svg>
+            </button>
+            <div class="w-[1px] h-3.5 bg-white/[0.09]"></div>
+            <button data-view-mode="columns" title="Miller Columns View"
+              class="view-mode-btn liquid-pill-active w-7 h-7 rounded-full flex items-center justify-center text-white transition-all">
+              <svg width="13.5" height="13.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35">
+                <rect x="1.5" y="2.5" width="13" height="11" rx="1.6"/>
+                <line x1="5.8" y1="2.5" x2="5.8" y2="13.5"/>
+                <line x1="10.2" y1="2.5" x2="10.2" y2="13.5"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Compact Liquid Glass Search Pill -->
+          <div class="relative flex items-center">
+            <svg width="12.5" height="12.5" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.48)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"
+              class="absolute left-3 pointer-events-none z-10">
+              <circle cx="11" cy="11" r="7.5"/><line x1="20.5" y1="20.5" x2="16.35" y2="16.35"/>
+            </svg>
+            <input id="finder-search-input" type="text" placeholder="Search" aria-label="Search archive"
+              class="liquid-pill w-[135px] sm:w-[195px] h-[32px] pl-8 pr-7 rounded-full text-[12.5px] text-white placeholder-white/45 focus:border-white/30 focus:outline-none transition-colors" />
+            <button id="btn-clear-search" title="Clear Search"
+              class="hidden absolute right-2 w-4 h-4 rounded-full bg-white/15 hover:bg-white/25 text-white/80 items-center justify-center text-[10px] leading-none z-10">
+              ×
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Finder Workspace (Miller Columns / List / Icon Grid) -->
+      <main id="finder-content-area" class="flex-1 flex min-w-0 min-h-0 overflow-hidden bg-transparent">
+        <!-- Rendered dynamically via JS -->
+      </main>
+
+      <!-- Bottom Two-Tier macOS Finder Path Bar & Status Bar -->
+      <footer class="shrink-0 bg-[#1A1A1C] border-t border-white/[0.085] select-none">
+        <!-- Tier 1: Interactive Path Bar -->
+        <div class="h-[26px] px-3.5 flex items-center border-b border-white/[0.065]">
+          <nav id="finder-breadcrumb" aria-label="Path Bar" class="flex items-center gap-1.5 min-w-0 overflow-x-auto whitespace-nowrap text-[11.5px] text-white/75">
+            <!-- Populated dynamically -->
+          </nav>
+        </div>
+
+        <!-- Tier 2: Centered macOS Status Bar -->
+        <div class="h-[23px] px-3.5 flex items-center justify-center">
+          <div id="finder-path-meta" class="text-[11px] text-white/45 tracking-[0.005em] whitespace-nowrap">
+            9 items, 192.19 GB available
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <!-- ======================================================================
+         2. SPACEBAR / DOUBLE-CLICK QUICK LOOK MODAL OVERLAY (DARK LIQUID GLASS)
+         ====================================================================== -->
+    <div id="quicklook-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md">
+      <div class="w-full max-w-[920px] h-[86vh] max-h-[640px] bg-[#1D1D1F] rounded-[18px] border border-white/15 shadow-[0_32px_90px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.14)] flex flex-col overflow-hidden text-[#F2F2F7]">
+        <!-- Modal Header -->
+        <div class="h-[46px] bg-[#222225] border-b border-white/[0.09] px-4 flex items-center justify-between gap-2 shrink-0">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="traffic-lights">
+              <button id="btn-ql-close" class="traffic-btn traffic-close" title="Close Quick Look (Esc)">
+                <svg width="6" height="6" viewBox="0 0 8 8" stroke="#4D0000" stroke-width="1.5" stroke-linecap="round"><line x1="1.5" y1="1.5" x2="6.5" y2="6.5"/><line x1="6.5" y1="1.5" x2="1.5" y2="6.5"/></svg>
+              </button>
+            </div>
+            <span id="ql-window-title" class="text-[12.5px] font-semibold text-white/90 truncate">
+              Quick Look — bench_model11.blend
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <button id="btn-ql-blueprint" class="liquid-pill px-3 py-1 rounded-full hover:bg-white/10 font-mono-tech text-[10.5px] text-white/85 transition-colors">
+              Paper / Blueprint
+            </button>
+            <div class="liquid-pill flex items-center rounded-full p-0.5">
+              <button id="btn-ql-prev" title="Previous File (←)" class="px-2.5 py-0.5 rounded-full hover:bg-white/10 text-[11px] text-white/85">‹ Prev</button>
+              <button id="btn-ql-next" title="Next File (→)" class="px-2.5 py-0.5 rounded-full hover:bg-white/10 text-[11px] text-white/85">Next ›</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Split Body -->
+        <div id="ql-window-body" class="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden bg-[#19191B]">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         3. SUBTLE ARCHITECTURAL TOAST MESSAGE BOX
+         ====================================================================== -->
+    <div id="os-toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] pointer-events-none opacity-0 transition-all duration-200">
+      <div class="liquid-pill bg-[#242427]/95 text-white px-3.5 py-1.5 rounded-full shadow-lg text-[11.5px] flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-[#27C93F]"></span>
+        <span id="os-toast-text">Notification</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       JAVASCRIPT APPLICATION KERNEL & reSEARCH (2022–2025) ARCHIVE DATA
+       ======================================================================== -->
+  <script>
+    (function () {
+      "use strict";
+
+      /* ======================================================================
+         1. EXACT reSEARCH DIRECTORY & FILE PATH MANIFEST
+         ====================================================================== */
+      const RAW_ARCHIVE_PATHS = [
+        // --- BENCH ---
+        "Bench/Briefing/research_project_brief.pdf",
+        "Bench/Briefing/Slide/01.jpg",
+        "Bench/Briefing/Slide/02.jpg",
+        "Bench/Briefing/Slide/03.jpg",
+        "Bench/Briefing/Slide/04.jpg",
+        "Bench/Briefing/Slide/05.jpg",
+        "Bench/Collages/285590885_398558962214308_899918601269925605_n.jpg",
+        "Bench/Collages/export01.png",
+        "Bench/Collages/export02.png",
+        "Bench/Models/Blender/bench_model.blend",
+        "Bench/Models/Blender/bench_model02.blend",
+        "Bench/Models/Blender/bench_model02.blend1",
+        "Bench/Models/Blender/bench_model04.blend",
+        "Bench/Models/Blender/bench_model04.blend1",
+        "Bench/Models/Blender/bench_model05.blend",
+        "Bench/Models/Blender/bench_model06.blend",
+        "Bench/Models/Blender/bench_model06.blend1",
+        "Bench/Models/Blender/bench_model07.blend",
+        "Bench/Models/Blender/bench_model07.blend1",
+        "Bench/Models/Blender/bench_model08.blend",
+        "Bench/Models/Blender/bench_model08.blend1",
+        "Bench/Models/Blender/bench_model09.blend",
+        "Bench/Models/Blender/bench_model09.blend1",
+        "Bench/Models/Blender/bench_model10.blend",
+        "Bench/Models/Blender/bench_model10.blend1",
+        "Bench/Models/Blender/bench_model11.blend",
+        "Bench/Models/Blender/bench_model11.blend1",
+        "Bench/Models/Blender/exports/export02.png",
+        "Bench/Models/Blender/exports/export03.png",
+        "Bench/Models/Blender/exports/export04.png",
+        "Bench/Models/Blender/exports/export05.png",
+        "Bench/Models/Blender/exports/export06.png",
+        "Bench/Models/Blender/exports/export07.png",
+        "Bench/Models/Blender/exports/export08.png",
+        "Bench/Models/Blender/exports/export13.png",
+        "Bench/Models/Blender/exports/export14.png",
+        "Bench/Models/Blender/exports/export15.png",
+        "Bench/Models/Blender/exports/export16.png",
+        "Bench/Models/Blender/exports/export17_01.png",
+        "Bench/Models/Blender/exports/export18_01.jpg",
+        "Bench/Models/Blender/exports/export19.png",
+        "Bench/Models/Blender/exports/export20.png",
+        "Bench/Models/Blender/exports/export21.png",
+        "Bench/Models/Blender/exports/export22.png",
+        "Bench/Models/Blender/exports/export23.png",
+        "Bench/Models/Blender/exports/export24.png",
+        "Bench/Models/SketchUp/exports/bench_model.dae",
+        "Bench/Models/SketchUp/exports/bench_model.jpg",
+        "Bench/Models/SketchUp/exports/bench_model02.3ds",
+        "Bench/Models/SketchUp/exports/bench_model03.dae",
+        "Bench/Models/SketchUp/exports/bench_model04.dae",
+        "Bench/Models/SketchUp/exports/bench_model04.mtl",
+        "Bench/Models/SketchUp/exports/bench_model04.obj",
+        "Bench/Models/SketchUp/exports/export02.mtl",
+        "Bench/Models/SketchUp/exports/export02.obj",
+        "Bench/Models/SketchUp/exports/export03.mtl",
+        "Bench/Models/SketchUp/exports/export03.obj",
+        "Bench/Models/SketchUp/exports/export04.mtl",
+        "Bench/Models/SketchUp/exports/export04.obj",
+        "Bench/Models/SketchUp/exports/export05.mtl",
+        "Bench/Models/SketchUp/exports/export05.obj",
+        "Bench/Models/SketchUp/exports/model10 ground.mtl",
+        "Bench/Models/SketchUp/exports/model10 ground.obj",
+        "Bench/Models/SketchUp/exports/model1206.mtl",
+        "Bench/Models/SketchUp/exports/model1206.obj",
+        "Bench/Models/SketchUp/exports/slice.stl",
+        "Bench/Models/SketchUp/model01.skp",
+        "Bench/Models/SketchUp/model02.skp",
+        "Bench/Models/SketchUp/model03.skp",
+        "Bench/Models/SketchUp/model04.skp",
+        "Bench/Models/SketchUp/model05.skp",
+        "Bench/Models/SketchUp/model06.skb",
+        "Bench/Models/SketchUp/model06.skp",
+        "Bench/Models/SketchUp/model07.skb",
+        "Bench/Models/SketchUp/model07.skp",
+        "Bench/Models/SketchUp/model08.skb",
+        "Bench/Models/SketchUp/model08.skp",
+        "Bench/Models/SketchUp/model09.skp",
+        "Bench/Models/SketchUp/model10 ground.skp",
+        "Bench/Models/SketchUp/model10.skb",
+        "Bench/Models/SketchUp/model10.skp",
+        "Bench/Models/SketchUp/model11 flatten.skp",
+        "Bench/Models/SketchUp/model12.skp",
+        "Bench/Models/SketchUp/model1201.skb",
+        "Bench/Models/SketchUp/model1201.skp",
+        "Bench/Models/SketchUp/model1202.skp",
+        "Bench/Models/SketchUp/model1203.skp",
+        "Bench/Models/SketchUp/model1204.skp",
+        "Bench/Models/SketchUp/model1205.skb",
+        "Bench/Models/SketchUp/model1205.skp",
+        "Bench/Models/SketchUp/model1206.skb",
+        "Bench/Models/SketchUp/model1206.skp",
+        "Bench/reSEARCH Bench Design Document.docx",
+        "Bench/Sponsorship/new slide/Bench Presentation/01.png",
+        "Bench/Sponsorship/new slide/Bench Presentation/02.png",
+        "Bench/Sponsorship/new slide/Bench Presentation/03.png",
+        "Bench/Sponsorship/new slide/Bench Presentation/04.png",
+        "Bench/Sponsorship/new slide/Bench Presentation/05.png",
+        "Bench/Sponsorship/new slide/Bench Presentation/06.png",
+        "Bench/Sponsorship/new slide/Bench Presentation/07.png",
+        "Bench/Sponsorship/new slide/Bench Presentation/new_inner_drawing01.pdf",
+        "Bench/Sponsorship/new slide/Bench Presentation/new_inner_drawing02.pdf",
+        "Bench/Sponsorship/new slide/Bench Presentation/new_inner_drawing03.pdf",
+        "Bench/Sponsorship/new slide/Bench Presentation/new_inner_drawing04.pdf",
+        "Bench/Sponsorship/new slide/Bench Presentation/Untitled-1.jpg",
+        "Bench/Sponsorship/new slide/reSEARCH Bench Project Files/Bench Presentation.pdf",
+        "Bench/Sponsorship/new slide/reSEARCH Bench Project Files/Technical Drawing/reSEARCH technical drawing (version 2007).dwg",
+        "Bench/Sponsorship/new slide/reSEARCH Bench Project Files/Technical Drawing/reSEARCH technical drawing (version 2018).dwg",
+        "Bench/Sponsorship/new slide/reSEARCH Bench Project Files.zip",
+        "Bench/Sponsorship/new slide/reSEARCH Presentation/reSEARCH Presentation.pdf",
+        "Bench/Sponsorship/new slide/Technical Drawing/reSEARCH technical drawing (version 2007).dwg",
+        "Bench/Sponsorship/new slide/Technical Drawing/reSEARCH technical drawing (version 2007)02.dwg",
+        "Bench/Sponsorship/new slide/Technical Drawing/reSEARCH technical drawing (version 2018).dwg",
+        "Bench/Sponsorship/reSEARCH Presentation.ai",
+        "Bench/Sponsorship/slide/slide04.jpg",
+        "Bench/Sponsorship/slide/slide05.jpg",
+        "Bench/Sponsorship/slide/slide07.jpg",
+        "Bench/Sponsorship/slide/slide08.jpg",
+        "Bench/Sponsorship/slide/slide09.jpg",
+        "Bench/Sponsorship/slide.psd",
+        "Bench/Sponsorship/technical files/01_ek.png",
+        "Bench/Sponsorship/technical files/01.png",
+        "Bench/Sponsorship/technical files/02.png",
+        "Bench/Sponsorship/technical files/03.png",
+        "Bench/Sponsorship/technical files/04.png",
+        "Bench/Sponsorship/technical files/Bench.slices.31.07.ai",
+        "Bench/Sponsorship/technical files/Bench.slices.31.07.dxf",
+        "Bench/Sponsorship/technical files/Bench.slices.dwg",
+        "Bench/Sponsorship/technical files/Bench.slices.dxf",
+        "Bench/Sponsorship/technical files/slide/01.png",
+        "Bench/Sponsorship/technical files/slide/02.png",
+        "Bench/Sponsorship/technical files/slide/03.png",
+        "Bench/Sponsorship/technical files/slide/04.png",
+        "Bench/Sponsorship/technical files/slide/05.png",
+        "Bench/Sponsorship/technical files/slide/06.png",
+        "Bench/Sponsorship/technical files/slide/reSEARCH_Bench_Technical_Drawing.bak",
+        "Bench/Sponsorship/technical files/slide/reSEARCH_Bench_Technical_Drawing.dwg",
+        "Bench/Sponsorship/technical files/slide/reSEARCH_Bench_Technical_Presentation.pdf",
+        "Bench/Sponsorship/technical files/slide.psd",
+        "Bench/Technical drawings/cad/ahsap_cnc.bak",
+        "Bench/Technical drawings/cad/ahsap_cnc.dwg",
+        "Bench/Technical drawings/cad/ahsap_cnc.dxf",
+        "Bench/Technical drawings/cad/anahtarlik_teknik_cizim.bak",
+        "Bench/Technical drawings/cad/anahtarlik_teknik_cizim.dwg",
+        "Bench/Technical drawings/cad/anahtarlik_teknik_cizim.dxf",
+        "Bench/Technical drawings/cad/bench_technical_drawing01.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing02.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing03.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing04.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing05.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing06.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing07.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing08.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing09.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing10.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing11.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing12.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing13.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing14_blender.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing14.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing15.dwg",
+        "Bench/Technical drawings/cad/bench_technical_drawing16.bak",
+        "Bench/Technical drawings/cad/bench_technical_drawing16.dwg",
+        "Bench/Technical drawings/cad/carpet_bench.dwg",
+        "Bench/Technical drawings/cad/irem makine/8mm takım psl.dwg",
+        "Bench/Technical drawings/exports/bench_locking_drawing.ai",
+        "Bench/Technical drawings/exports/dxf/baslangic_parcalari.dxf",
+        "Bench/Technical drawings/exports/dxf/beginning_part.dxf",
+        "Bench/Technical drawings/exports/dxf/bench_section_drawing02.dxf",
+        "Bench/Technical drawings/exports/dxf/bench_section_drawing03.dxf",
+        "Bench/Technical drawings/exports/dxf/bench_technical_drawing16.bak",
+        "Bench/Technical drawings/exports/dxf/bench_technical_drawing16.dxf",
+        "Bench/Technical drawings/exports/dxf/chain01.dxf",
+        "Bench/Technical drawings/exports/dxf/drawing05 flatten.dxf",
+        "Bench/Technical drawings/exports/dxf/drawing14_blender.bak",
+        "Bench/Technical drawings/exports/dxf/drawing14_blender.dxf",
+        "Bench/Technical drawings/exports/dxf/export10.dxf",
+        "Bench/Technical drawings/exports/dxf/new_chain.dxf",
+        "Bench/Technical drawings/exports/dxf/new_inner_drawing.bak",
+        "Bench/Technical drawings/exports/dxf/new_inner_drawing.dxf",
+        "Bench/Technical drawings/exports/dxf/paslanmaz_kesim_cizim.bak",
+        "Bench/Technical drawings/exports/dxf/paslanmaz_kesim_cizim.dxf",
+        "Bench/Technical drawings/exports/dxf/Untitled-7.dxf",
+        "Bench/Technical drawings/exports/pdf/baslangic_parcalari.pdf",
+        "Bench/Technical drawings/exports/pdf/bench_chain_drawing.pdf",
+        "Bench/Technical drawings/exports/pdf/bench_drawing02.pdf",
+        "Bench/Technical drawings/exports/pdf/bench_locking_drawing.pdf",
+        "Bench/Technical drawings/exports/pdf/drawing13.pdf",
+        "Bench/Technical drawings/new inner drawings/Untitled-2.ai",
+        "Bench/Technical drawings/new inner drawings/Untitled-3.ai",
+        "Bench/Technical drawings/new inner drawings/Untitled-4.ai",
+        "Bench/Technical drawings/new inner drawings/Untitled-5.ai",
+        "Bench/Technical drawings/new inner drawings/Untitled-6.ai",
+        "Bench/Technical drawings/new inner drawings/Untitled-7.ai",
+        "Bench/Technical drawings/paslanmaz kesim/alt_lamalar_16_08_2024.bak",
+        "Bench/Technical drawings/paslanmaz kesim/alt_lamalar_16_08_2024.dwg",
+        "Bench/Technical drawings/paslanmaz kesim/alt_lamalar_16_08_2024.dxf",
+        "Bench/Technical drawings/paslanmaz kesim/ara_tasiyicilar_30_07_2024.bak",
+        "Bench/Technical drawings/paslanmaz kesim/ara_tasiyicilar_30_07_2024.dwg",
+        "Bench/Technical drawings/paslanmaz kesim/ara_tasiyicilar_30_07_2024.dxf",
+        "Bench/Technical drawings/paslanmaz kesim/baslangic ek parcasi.pdf",
+        "Bench/Technical drawings/paslanmaz kesim/diagram.pdf",
+        "Bench/Technical drawings/paslanmaz kesim/drawing14-Model.pdf",
+        "Bench/Technical drawings/paslanmaz kesim/orta_tasiyicilar.pdf",
+        "Bench/Technical drawings/paslanmaz kesim/paslanmaz_kesim_03_04_2024.bak",
+        "Bench/Technical drawings/paslanmaz kesim/paslanmaz_kesim_03_04_2024.dwg",
+        "Bench/Technical drawings/paslanmaz kesim/paslanmaz_kesim_03_04_2024.dxf",
+        "Bench/Technical drawings/paslanmaz kesim/paslanmaz_kesim01.bak",
+        "Bench/Technical drawings/paslanmaz kesim/paslanmaz_kesim01.dwg",
+        "Bench/Technical drawings/paslanmaz kesim/paslanmaz_kesim01.png",
+        "Bench/Technical drawings/paslanmaz kesim/paslanmaz_kesim02.bak",
+        "Bench/Technical drawings/paslanmaz kesim/safezone.pdf",
+        "Bench/Website/Model/Blender/exports/untitled01.png",
+        "Bench/Website/Model/Blender/model01.blend",
+        "Bench/Website/Model/Blender/model01.blend1",
+        "Bench/Website/Model/Sketchup/Exports/export01.mtl",
+        "Bench/Website/Model/Sketchup/Exports/export01.obj",
+        "Bench/Website/Model/Sketchup/model01.skb",
+        "Bench/Website/Model/Sketchup/model01.skp",
+
+        // --- CHAIR ---
+        "Chair/Illustration/Idea.png",
+        "Chair/Models/Blender/Exports/export01.png",
+        "Chair/Models/Blender/Exports/export02.png",
+        "Chair/Models/Blender/model01.blend",
+        "Chair/Models/Blender/model01.blend1",
+        "Chair/Models/Sketchup/Exports/01.jpg",
+        "Chair/Models/Sketchup/Exports/02.jpg",
+        "Chair/Models/Sketchup/Exports/03.jpg",
+        "Chair/Models/Sketchup/Exports/04.jpg",
+        "Chair/Models/Sketchup/Exports/05.jpg",
+        "Chair/Models/Sketchup/Exports/06.jpg",
+        "Chair/Models/Sketchup/Exports/export01.mtl",
+        "Chair/Models/Sketchup/Exports/export01.obj",
+        "Chair/Models/Sketchup/Exports/export02.mtl",
+        "Chair/Models/Sketchup/Exports/export02.obj",
+        "Chair/Models/Sketchup/Exports/export03.mtl",
+        "Chair/Models/Sketchup/Exports/export03.obj",
+        "Chair/Models/Sketchup/model01.skb",
+        "Chair/Models/Sketchup/model01.skp",
+        "Chair/Models/Sketchup/model02.skb",
+        "Chair/Models/Sketchup/model02.skp",
+        "Chair/Models/Sketchup/model03.skp",
+        "Chair/Models/Sketchup/model04.skb",
+        "Chair/Models/Sketchup/model04.skp",
+        "Chair/Photos/DSCF6038.00_00_22_22.Still006.jpeg",
+        "Chair/Photos/DSCF6038.00_00_46_24.Still007.jpeg",
+        "Chair/Photos/DSCF7177-Enhanced-NR.jpeg",
+        "Chair/References/af2ef914623017.56372a66ae7a4.jpg",
+        "Chair/References/KNEX-Beginner-40-Model-Building-Set-by-KNex-4.jpg",
+        "Chair/References/KNEX-CLASSICS-125-PC---10-MODEL---BEGINNER-BUILDS-BUILDINGS-5.jpg",
+        "Chair/References/maxresdefault.jpg",
+        "Chair/References/unblock.jpg",
+        "Chair/Technical drawings/CAD/chair_technical_drawing01.dwg",
+        "Chair/Technical drawings/CAD/chair_technical_drawing02.dwg",
+        "Chair/Technical drawings/CAD/chair_technical_drawing03.dwg",
+        "Chair/Technical drawings/CAD/chair_technical_drawing04.dwg",
+        "Chair/Technical drawings/CAD/chair_technical_drawing05.dwg",
+        "Chair/Technical drawings/CAD/chair_technical_drawing06.bak",
+        "Chair/Technical drawings/CAD/chair_technical_drawing06.dwg",
+        "Chair/Technical drawings/CAD/chair_technical_drawing07.bak",
+        "Chair/Technical drawings/CAD/chair_technical_drawing07.dwg",
+        "Chair/Technical drawings/CAD/chair_technical_drawing07.dxf",
+        "Chair/Technical drawings/CAD/chair_technical_drawing08_simplied.bak",
+        "Chair/Technical drawings/CAD/chair_technical_drawing08_simplied.dwg",
+        "Chair/Technical drawings/CAD/chair_technical_drawing08.bak",
+        "Chair/Technical drawings/CAD/chair_technical_drawing08.dwg",
+        "Chair/Technical drawings/CAD/Ilgın_Nehir_Günay_18mm_Kesim.dwg",
+        "Chair/Technical drawings/CAD/Ilgın_Nehir_Günay_18mm_Kesim.dxf",
+        "Chair/Technical drawings/Exports/chair_technical_drawing01.pdf",
+        "Chair/Technical drawings/Exports/chair_technical_drawing02.pdf",
+        "Chair/Technical drawings/Exports/chair_technical_drawing03.pdf",
+        "Chair/Technical drawings/Exports/chair-cutting.dxf",
+        "Chair/Technical drawings/Exports/export01.bak",
+        "Chair/Technical drawings/Exports/export01.dwg",
+        "Chair/Technical drawings/Exports/export01.dxf",
+        "Chair/Technical drawings/Exports/export02.bak",
+        "Chair/Technical drawings/Exports/export02.dxf",
+        "Chair/Technical drawings/Exports/export03.bak",
+        "Chair/Technical drawings/Exports/export03.dxf",
+        "Chair/Technical drawings/Exports/export04.bak",
+        "Chair/Technical drawings/Exports/export04.dxf",
+
+        // --- COFFEE TABLE ---
+        "Coffee table/Model/Blender/Exports/export01.png",
+        "Coffee table/Model/Blender/model01.blend",
+        "Coffee table/Model/Blender/model01.blend1",
+        "Coffee table/Model/Sketchup/Exports/export01.mtl",
+        "Coffee table/Model/Sketchup/Exports/export01.obj",
+        "Coffee table/Model/Sketchup/model01.skb",
+        "Coffee table/Model/Sketchup/model01.skp",
+        "Coffee table/Technical drawings/CAD/Ilgın_Nehir_Günay_9mm_Kesim.dwg",
+        "Coffee table/Technical drawings/CAD/Ilgın_Nehir_Günay_9mm_Kesim.dxf",
+        "Coffee table/Technical drawings/CAD/technical_drawing01.dwg",
+        "Coffee table/Technical drawings/Exports/Sehpa_Kesim.bak",
+        "Coffee table/Technical drawings/Exports/Sehpa_Kesim.dxf",
+
+        // --- LAUNCH BOOTH ---
+        "Launch booth/Istanbul Modern/Banners/80x240/80x240_01.ai",
+        "Launch booth/Istanbul Modern/Banners/80x240/80x240_02.ai",
+        "Launch booth/Istanbul Modern/Banners/80x240/80x240_03.ai",
+        "Launch booth/Istanbul Modern/Banners/250x240/250x240_01.ai",
+        "Launch booth/Istanbul Modern/Banners/250x240/250x240_02.ai",
+        "Launch booth/Istanbul Modern/Banners/250x240/250x240_03.ai",
+        "Launch booth/Istanbul Modern/Banners/250x240/250x240_04.ai",
+        "Launch booth/Istanbul Modern/Banners/250x240/image-494b3456-7916-43e8-978d-121fd988fb14.jpg",
+        "Launch booth/Istanbul Modern/Banners/250x240/Untitled-1.png",
+        "Launch booth/Istanbul Modern/Banners/500x240/500x240_01.ai",
+        "Launch booth/Istanbul Modern/Banners/500x240/500x240_02.ai",
+        "Launch booth/Istanbul Modern/Banners/Background/exports/banner_background.ai",
+        "Launch booth/Istanbul Modern/Banners/Background/exports/untitled.png",
+        "Launch booth/Istanbul Modern/Banners/Background/exports/untitled01.png",
+        "Launch booth/Istanbul Modern/Banners/Background/model/banner.blend",
+        "Launch booth/Istanbul Modern/Banners/Background/model/banner.blend1",
+        "Launch booth/Istanbul Modern/Banners/graphics 24.07.ai",
+        "Launch booth/Istanbul Modern/Banners/Other options/Exports/250x240_IA.jpg",
+        "Launch booth/Istanbul Modern/Banners/Other options/Exports/250x240_OA.jpg",
+        "Launch booth/Istanbul Modern/Banners/Other options/Exports/250x240_OB.jpg",
+        "Launch booth/Istanbul Modern/Banners/Other options/Exports/250x240_OC.jpg",
+        "Launch booth/Istanbul Modern/Banners/Other options/Exports/250x240_OD.jpg",
+        "Launch booth/Istanbul Modern/Banners/Other options/Exports/250x240.jpg",
+        "Launch booth/Istanbul Modern/Banners/Other options/Exports/500x240_IA.jpg",
+        "Launch booth/Istanbul Modern/Banners/Other options/Exports/500x240_IB.jpg",
+        "Launch booth/Istanbul Modern/Banners/Other options/Exports/500x240_OA.jpg",
+        "Launch booth/Istanbul Modern/Banners/Other options/Exports/500x240_OB.jpg",
+        "Launch booth/Istanbul Modern/Banners/Other options/Exports/A.80x240.jpg",
+        "Launch booth/Istanbul Modern/Banners/Other options/Exports/B.80x240.jpg",
+        "Launch booth/Istanbul Modern/Banners/Other options/Exports/C.80x240.jpg",
+        "Launch booth/Istanbul Modern/Banners/Other options/Graphics.500x240.ai",
+        "Launch booth/Istanbul Modern/Banners/Other options/Graphics80x240.ai",
+        "Launch booth/Istanbul Modern/Banners/Other options/Graphics250x240.ai",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/01/01.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/01/001.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/01/002.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/01/003.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/01/004.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/01/006.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/01 mockup.jpg",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/01-mockup.jpg",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/01.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/01.psd",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/02.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/03.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/04 mockup.jpg",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/04.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/04.psd",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/05.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/06 01 mockup 01.jpg",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/06 01 mockup 02.jpg",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/06 01.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/06 02.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/06-02-mockup.jpg",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/06.psd",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/07.png",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/02/modern.jpg",
+        "Launch booth/Istanbul Modern/Model/Blender/Exports/IMG_1744.psd",
+        "Launch booth/Istanbul Modern/Model/Blender/istanbul_modern01.blend",
+        "Launch booth/Istanbul Modern/Model/Blender/istanbul_modern02.blend",
+        "Launch booth/Istanbul Modern/Model/Blender/istanbul_modern02.blend1",
+        "Launch booth/Istanbul Modern/Model/Blender/istanbul_modern03.blend",
+        "Launch booth/Istanbul Modern/Model/Blender/istanbul_modern04_roof_removed.blend",
+        "Launch booth/Istanbul Modern/Model/Blender/istanbul_modern04_roof_removed.blend1",
+        "Launch booth/Istanbul Modern/Model/Blender/istanbul_modern04.blend",
+        "Launch booth/Istanbul Modern/Model/Blender/istanbul_modern04.blend1",
+        "Launch booth/Istanbul Modern/Model/Sketchup/Exports/reveal_setup03.mtl",
+        "Launch booth/Istanbul Modern/Model/Sketchup/Exports/reveal_setup03.obj",
+        "Launch booth/Istanbul Modern/Model/Sketchup/Exports/reveal_setup04.mtl",
+        "Launch booth/Istanbul Modern/Model/Sketchup/Exports/reveal_setup04.obj",
+        "Launch booth/Istanbul Modern/Model/Sketchup/Exports/reveal_setup05.mtl",
+        "Launch booth/Istanbul Modern/Model/Sketchup/Exports/reveal_setup05.obj",
+        "Launch booth/Istanbul Modern/Model/Sketchup/Exports/reveal_setup07_without_roof.mtl",
+        "Launch booth/Istanbul Modern/Model/Sketchup/Exports/reveal_setup07_without_roof.obj",
+        "Launch booth/Istanbul Modern/Model/Sketchup/istanbul_modern.skb",
+        "Launch booth/Istanbul Modern/Model/Sketchup/istanbul_modern.skp",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup01.skb",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup01.skp",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup02.skb",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup02.skp",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup03.skb",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup03.skp",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup04.skb",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup04.skp",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup05.skp",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup06.skb",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup06.skp",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup07_60x60.skb",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup07_60x60.skp",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup07_without_roof.skb",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup07_without_roof.skp",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup07.skb",
+        "Launch booth/Istanbul Modern/Model/Sketchup/reveal_setup07.skp",
+        "Launch booth/Istanbul Modern/Presentation/presentation.ai",
+        "Launch booth/Istanbul Modern/Presentation/reSEARCH Istanbul Modern Presentation 01.pdf",
+        "Launch booth/Istanbul Modern/Presentation/reSEARCH Istanbul Modern Presentation.pdf",
+        "Launch booth/Istanbul Modern/Presentation/Untitled-1.indd",
+        "Launch booth/Istanbul Modern/Presentation/Untitled-2.indd",
+        "Launch booth/Istanbul Modern/Presentation/Untitled-3.indd",
+        "Launch booth/Istanbul Modern/Technical drawings/drawing01.bak",
+        "Launch booth/Istanbul Modern/Technical drawings/drawing01.dwg",
+        "Launch booth/reSEARCH_Steel_Waves_Launch_Presentation.pdf",
+
+        // --- MEETINGS ---
+        "Meetings/2022_09_15/new-beginnings.jpg",
+        "Meetings/2022_09_22/mindmap01.pdf",
+        "Meetings/2022_09_22/mindmap02.pdf",
+        "Meetings/2022_10_03/reSEARCH_bench_moodboard.pdf",
+        "Meetings/2022_10_11/2F2D265B-A139-4CFC-9BD8-D4B154C42240.jpg",
+        "Meetings/2022_10_11/reSEARCH_ING_22_11_10.pdf",
+        "Meetings/2022_10_17/ing_notes_17_10_22.jpg",
+        "Meetings/2022_10_17/logo set.png",
+        "Meetings/2022_10_17/meeting to-dos for 01_11_2022.jpg",
+        "Meetings/2022_10_17/meeting to-dos for 01_11_2022.pdf",
+        "Meetings/2022_10_17/reSEARCH_Bench.pdf",
+        "Meetings/2022_10_17/team17_10_22.jpg",
+        "Meetings/2022_11_23/2022-11-23.png",
+        "Meetings/2022_11_23/reSEARCH22.pdf",
+        "Meetings/2022_11_30/01.jpg",
+        "Meetings/2022_11_30/02.jpg",
+        "Meetings/2022_11_30/03.jpg",
+        "Meetings/2022_12_04/04_12_2022.jpg",
+        "Meetings/2022_12_04/04_12_2022.psd",
+        "Meetings/2022_12_04/2022-12-04.png",
+        "Meetings/2022_12_04/221204_Eren_LB_Research_Kazkazan.pdf",
+        "Meetings/2022_12_04/bench.png",
+        "Meetings/2022_12_04/locksystem.png",
+        "Meetings/2022_12_04/reSEARCH.pdf",
+        "Meetings/2022_12_04/seesaw.Bench.prototype_.png",
+        "Meetings/2022_12_07/bench_diagram.pdf",
+        "Meetings/2022_12_07/IMG_8066.jpg",
+        "Meetings/2022_12_07/reSEARCH22_Tulca.pdf",
+        "Meetings/2022_12_29/bench_section_drawing01.pdf",
+        "Meetings/2022_12_29/NB2.png",
+        "Meetings/2022_12_29/plot.log",
+        "Meetings/2022_12_29/research_29_12_22.jpg",
+        "Meetings/2022_12_29/research_29_12_22.pdf",
+        "Meetings/2022_12_29/SB4.png",
+        "Meetings/2023_01_23/DSCF0309-2.jpg",
+        "Meetings/2023_01_23/E77E54FA-BCDD-49BF-90DB-2239C0EF9042.jpg",
+        "Meetings/2023_02_21/research_presentation_3.pdf",
+        "Meetings/2023_04_03/bench_locking_mechanism.pdf",
+        "Meetings/2023_04_10/AR_draft_reSEARCH.png",
+        "Meetings/2023_04_10/reSEARCH_sosyal_medya.png",
+        "Meetings/2023_06_12/Bench.Technicaldrawing.12.06.pdf",
+        "Meetings/2023_06_12/huntr_stori_pg1.pdf",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7244-2.jpg",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7255-2.jpg",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7277.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7294.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7299.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7305.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7314-2.jpg",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7316-2.jpg",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7317-2.jpg",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7317.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7334.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7346.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7350.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7352-2.jpg",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7354-2.jpg",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7360.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7361.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7363.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7369.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7381.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7389.JPG",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7392-2.jpg",
+        "Meetings/2023_07_15/lb-hq-research-prototype-230715-photos_2023-07-16_1100/DSCF7392-4.jpg",
+        "Meetings/2023_07_15/slice_slowmo.mp4",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7410.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7411.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7412.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7420.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7421.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7422.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7423.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7424.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7425.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7426.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7427.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7428.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7429.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7430.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7431.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7433.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7436.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7437.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7438.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7439.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7440.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7441.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7442.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7443.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7444.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7446.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7447.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7448.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7449.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7450.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7451.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7453.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7454.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7455.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7456.JPG",
+        "Meetings/2023_07_22/22-07-23-lb-research-petra-tlc-ing-photos_2023-07-26_1027/DSCF7457.JPG",
+        "Meetings/2023_07_22/website_landing_page.pdf",
+        "Meetings/2023_08_06/1.reSEARCH_Bench_Technical_Drawing.ai",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7635.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7642.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7652.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7655.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7658.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7663.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7664.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7665.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7669.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7671.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7675.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7676.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7681.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7683.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7688.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7689.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7699.jpg",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7713.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7722.jpg",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7731.jpg",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7738.jpg",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7753.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7762.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7766.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7767.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7771.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7773.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7774.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7777.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7778.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7783.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7785.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7790-2.jpg",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7790.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7792.JPG",
+        "Meetings/2023_08_06/lb-research-allgone-photos_2023-08-06_2045/DSCF7795.JPG",
+        "Meetings/2023_08_15/wetransfer_research_teasers_insta_2023-08-15_1303/research_teaser_4.3_insta.mp4",
+        "Meetings/2023_08_15/wetransfer_research_teasers_insta_2023-08-15_1303/research_teaser_16.9 insta.mp4",
+        "Meetings/2023_09_27/reveal.pdf",
+        "Meetings/2023_10_13/chair_technical_drawing01.pdf",
+        "Meetings/2023_10_23/research_chair.pdf",
+        "Meetings/2023_10_23/research_coffe_table.pdf",
+        "Meetings/2023_10_23/reSearch_sketches.pdf",
+        "Meetings/2023_10_23/skizze_bench.pdf",
+        "Meetings/2023_11_01/03.png",
+        "Meetings/2023_11_08/image.png",
+        "Meetings/2023_11_08/KILO_kL-Wall.png",
+        "Meetings/2023_11_08/research_wall_light.pdf",
+        "Meetings/2024_02_21/DSCF7138-Enhanced-NR.jpg",
+        "Meetings/2024_02_21/DSCF7169-Enhanced-NR.jpg",
+        "Meetings/2024_02_21/DSCF7177-Enhanced-NR.jpg",
+        "Meetings/2024_02_21/DSCF7182-Enhanced-NR.jpg",
+        "Meetings/2024_02_21/DSCF7184-Enhanced-NR.jpg",
+        "Meetings/2024_02_21/DSCF7210.jpg",
+        "Meetings/2024_02_21/DSCF7212.jpg",
+        "Meetings/2024_02_21/DSCF7221-Enhanced-NR.jpg",
+        "Meetings/2024_02_21/DSCF7229-Enhanced-NR.jpg",
+        "Meetings/2024_02_21/DSCF7230-2.jpg",
+        "Meetings/2024_02_21/DSCF7230.jpg",
+        "Meetings/2024_02_21/DSCF7235.jpg",
+        "Meetings/2024_02_21/DSCF7238-2.jpg",
+        "Meetings/2024_02_21/DSCF7241.jpg",
+        "Meetings/2024_02_21/DSCF7259.jpg",
+        "Meetings/2024_02_21/DSCF7263.jpg",
+        "Meetings/2024_02_21/DSCF7264.jpg",
+        "Meetings/2024_02_21/DSCF7265.jpg",
+        "Meetings/2024_02_21/DSCF7267.jpg",
+        "Meetings/2024_04_15/2.2.jpeg",
+        "Meetings/2024_04_15/2.3.jpeg",
+        "Meetings/2024_04_15/2.5.jpeg",
+        "Meetings/2024_04_15/2Capture.jpeg",
+        "Meetings/2024_04_15/reSEARCH_15_04_2024.pdf",
+        "Meetings/2024_04_15/Untitled-1.indd",
+        "Meetings/2024_04_15/Untitled-1.png",
+        "Meetings/2024_04_15/Untitled-2.png",
+        "Meetings/2024_04_15/Untitled-3.png",
+        "Meetings/2024_04_15/Untitled-4.png",
+        "Meetings/2024_04_15/Untitled-5.png",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_04_16_03.Still001.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_05_01_02.Still002.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_05_37_10.Still003.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_05_38_15.Still004.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_07_31_07.Still005.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_08_20_17.Still006.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_13_49_21.Still009.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_14_20_07.Still008.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_14_35_06.Still010.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_14_38_05.Still007.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_30_03_01.Still011.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_35_09_24.Still012.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_35_39_24.Still013.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_41_31_07.Still016.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_41_53_06.Still015.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_42_11_07.Still014.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_44_32_12.Still017.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_46_40_00.Still020.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_47_27_18.Still018.jpg",
+        "Meetings/2024_08_22/RESEARCH STILLSS.00_48_03_06.Still019.jpg",
+
+        // --- MERCH ---
+        "Merch/blueprint01.pdf",
+        "Merch/blueprint02.pdf",
+        "Merch/blueprint03.pdf",
+        "Merch/blueprint04.pdf",
+        "Merch/Illustrator/blueprint_tee01.ai",
+        "Merch/Illustrator/blueprint_tee02.ai",
+        "Merch/Illustrator/blueprint_tee03.ai",
+        "Merch/Illustrator/blueprint_tee04.ai",
+        "Merch/Illustrator/Exports/blueprint_tee03.png",
+        "Merch/Illustrator/Exports/blueprint01.png",
+        "Merch/Illustrator/Exports/blueprint02.png",
+        "Merch/Illustrator/Exports/reSEARCH Tee Manufacturing/Fonts/AOMono-Bold.otf",
+        "Merch/Illustrator/Exports/reSEARCH Tee Manufacturing/Fonts/AOMono-Regular.otf",
+        "Merch/Illustrator/Exports/reSEARCH Tee Manufacturing/Fonts/MyriadPro-Regular.otf",
+        "Merch/Illustrator/Exports/reSEARCH Tee Manufacturing/Fonts/SF-Pro-Display-Black.otf",
+        "Merch/Illustrator/Exports/reSEARCH Tee Manufacturing/Fonts/SF-Pro-Display-LightItalic.otf",
+        "Merch/Illustrator/Exports/reSEARCH Tee Manufacturing/Fonts/SF-Pro-Display-Medium.otf",
+        "Merch/Illustrator/Exports/reSEARCH Tee Manufacturing/reSEARCH Tshirt Uretim Report.txt",
+        "Merch/Illustrator/Exports/reSEARCH Tee Manufacturing/reSEARCH Tshirt Uretim.ai",
+        "Merch/Illustrator/Exports/untitled-1.png",
+        "Merch/Illustrator/Exports/untitled-2.png",
+        "Merch/Illustrator/illustration02.ai",
+        "Merch/Illustrator/reSEARCH Tshirt Uretim.ai",
+        "Merch/merch_illustration01.ai",
+        "Merch/merch_illustration02.ai",
+        "Merch/merch_mockup_template.ai",
+
+        // --- MULTITOOL ---
+        "Multitool/CNC files/01.jpeg",
+        "Multitool/CNC files/02.jpeg",
+        "Multitool/CNC files/03.jpeg",
+        "Multitool/CNC files/04.jpeg",
+        "Multitool/CNC files/05.jpeg",
+        "Multitool/CNC files/06.jpeg",
+        "Multitool/CNC files/Multitool_cizim_20_02_2025.dwg",
+        "Multitool/CNC files/Multitool_cizim02.dwg",
+        "Multitool/CNC files/Screenshot 2025-03-13 at 15.54.57.png",
+        "Multitool/CNC files/Screenshot 2025-03-13 at 15.58.03.png",
+        "Multitool/CNC files/Screenshot 2025-03-13 at 15.58.55.png",
+        "Multitool/IMG_2299.jpeg",
+        "Multitool/Technical drawings/A-LASERREADY-MULTI TOOL-SELECTED.dwg",
+        "Multitool/Technical drawings/acad.err",
+        "Multitool/Technical drawings/chargin_icon.dxf",
+        "Multitool/Technical drawings/Exports/paslanmaz_kesim_28_08_2024.dxf",
+        "Multitool/Technical drawings/Exports/pdf/A-LASERREADY-MULTI TOOL-SELECTED-Model.pdf",
+        "Multitool/Technical drawings/Exports/pdf/plot.log",
+        "Multitool/Technical drawings/Exports/pdf/technical_drawing01-Model.pdf",
+        "Multitool/Technical drawings/MULTI-TOOL-2 PARCA-FINALIZE.dwg",
+        "Multitool/Technical drawings/Multitool_cizim01.dwg",
+        "Multitool/Technical drawings/Multitool_cizim02.dwg",
+        "Multitool/Technical drawings/technical_drawing01.dwg",
+        "Multitool/Technical drawings/technical_drawing02.dwg",
+        "Multitool/Technical drawings/technical_drawing03.dwg",
+        "Multitool/Technical drawings/technical_drawing04.bak",
+        "Multitool/Technical drawings/technical_drawing04.dwg",
+        "Multitool/Technical drawings/technical_drawing05.bak",
+        "Multitool/Technical drawings/technical_drawing05.dwg",
+        "Multitool/Technical drawings/technical_drawing06.bak",
+        "Multitool/Technical drawings/technical_drawing06.dwg",
+        "Multitool/Technical drawings/technical_drawing07.bak",
+        "Multitool/Technical drawings/technical_drawing07.dwg",
+        "Multitool/Technical drawings/yazilar02.ai",
+        "Multitool/Technical drawings/yazilar02.dwg",
+        "Multitool/Technical drawings/yazilar02.dxf",
+        "Multitool/Technical drawings/yazilar03.ai",
+        "Multitool/Technical drawings/yazilar03.dwg",
+
+        // --- TAG ---
+        "Tag/Exports/keychain.pdf",
+        "Tag/Exports/keychain01.png",
+        "Tag/Illustrations/keychain.ai",
+        "Tag/Model/Blender/bench_model10.blend",
+        "Tag/Model/Blender/model01.blend",
+        "Tag/Model/Blender/model01.blend1",
+        "Tag/Model/Blender/model02.blend",
+        "Tag/Model/Blender/model02.blend1",
+        "Tag/Model/Blender/model03.blend",
+        "Tag/Model/Blender/model03.blend1",
+        "Tag/Model/Exports/glass.png",
+        "Tag/Model/Exports/glassv2.png",
+        "Tag/Model/Exports/keychain.mtl",
+        "Tag/Model/Exports/keychain01.obj",
+        "Tag/Model/Exports/keychain02.mtl",
+        "Tag/Model/Exports/keychain02.obj",
+        "Tag/Model/Exports/red.png",
+        "Tag/Model/Exports/steel.png",
+        "Tag/Model/Exports/tag.mtl",
+        "Tag/Model/Exports/tag.obj",
+        "Tag/Model/Exports/tag02.mtl",
+        "Tag/Model/Exports/tag02.obj",
+        "Tag/Model/Exports/water.png",
+        "Tag/Model/Sketchup/keychain.skb",
+        "Tag/Model/Sketchup/keychain.skp",
+        "Tag/Model/Sketchup/tag.skp",
+        "Tag/Model/Sketchup/tag02.skp",
+        "Tag/Post/Exports/Untitled-1.png",
+        "Tag/Post/Exports/Untitled-2.png",
+        "Tag/Post/Exports/Untitled-3.png",
+        "Tag/Post/Exports/Untitled-4.png",
+        "Tag/Post/Untitled-1.psd",
+        "Tag/Technical drawings/keychain_technical_drawing.bak",
+        "Tag/Technical drawings/keychain_technical_drawing.dwg",
+        "Tag/Technical drawings/keychain.dxf",
+        "Tag/Technical drawings/logo.dxf",
+        "Tag/Technical drawings/logo02.dxf",
+
+        // --- WORKSHOPS ---
+        "Workshops/Background/background.bak",
+        "Workshops/Background/background.dwg",
+        "Workshops/Background/background01.psd",
+        "Workshops/Background/background02.psd",
+        "Workshops/Background/Exports/background01.png",
+        "Workshops/Background/Exports/background02.png",
+        "Workshops/Background/Exports/background03.png",
+        "Workshops/Background/Exports/background04.png",
+        "Workshops/Background/Exports/background05.png",
+        "Workshops/Background/Exports/background06.png",
+        "Workshops/Background/Exports/background07.png",
+        "Workshops/Background/Exports/background08.png",
+        "Workshops/Background/Exports/background09.png",
+        "Workshops/Background/Exports/research_logo.png",
+        "Workshops/Background/Exports/Rising Logo01.png",
+        "Workshops/Background/Exports/Rising Logo01.psd",
+        "Workshops/Background/Exports/Untitled-1.pdf",
+        "Workshops/Background/Inspirations/162909FCT-1A_1.png",
+        "Workshops/Background/Inspirations/164909FCT_1B_1.png",
+        "Workshops/Background/Inspirations/focus-fcbgs-21a-bongo-standi_136496_1.jpg",
+        "Workshops/Background/Inspirations/PEARL-UGB-815-2-Wing-Bolt-Kelebe_5509_1.jpg",
+        "Workshops/Background/Inspirations/tumblr_5c7b40bee3e300c173b2f8cf25090710_8baf2d98_2048.jpg",
+        "Workshops/Background/Inspirations/tumblr_5cf3116d0424d634ebcb70308f309c43_4f3a543c_640.jpg",
+        "Workshops/Background/Inspirations/tumblr_a4a1b60a734ca98ff5f114a77bbc5451_f921ad57_1280.jpg",
+        "Workshops/Flag/Announcement images/reSEARCH-1080x1080.jpg",
+        "Workshops/Flag/Announcement images/reSEARCH-1080x1920.jpg",
+        "Workshops/Flag/Announcement images/reSEARCH-Discord.jpg",
+        "Workshops/Flag/Announcement images/reSEARCH-Kalder.jpg",
+        "Workshops/Flag/announcement logo.ai",
+        "Workshops/Flag/Embroidery/rising logo/Rising Logo01.bmp",
+        "Workshops/Flag/Embroidery/rising logo/Rising Logo01.saf",
+        "Workshops/Flag/Embroidery/rising logo/Rising Logo01.txt",
+        "Workshops/Flag/Embroidery/rising logo/Rising Logo01.vp3",
+        "Workshops/Flag/Embroidery/rising logo/Rising Logo02.bmp",
+        "Workshops/Flag/Embroidery/rising logo/Rising Logo02.saf",
+        "Workshops/Flag/Embroidery/rising logo/Rising Logo02.txt",
+        "Workshops/Flag/Embroidery/rising logo/Rising Logo02.vp3",
+        "Workshops/Flag/Embroidery/rising logo/Rising Logo03.vp3",
+        "Workshops/Flag/Embroidery/rising mixed logo/rising_mixed_logo01.bmp",
+        "Workshops/Flag/Embroidery/rising mixed logo/rising_mixed_logo01.jpg",
+        "Workshops/Flag/Embroidery/rising mixed logo/rising_mixed_logo01.saf",
+        "Workshops/Flag/Embroidery/rising mixed logo/rising_mixed_logo01.txt",
+        "Workshops/Flag/Embroidery/rising mixed logo/rising_mixed_logo01.vp3",
+        "Workshops/Flag/Embroidery/rising mixed logo/rising_mixed_logo02.vp3",
+        "Workshops/Flag/Embroidery/text logo/text_logo.jpg",
+        "Workshops/Flag/Embroidery/text logo/text_logo01.bmp",
+        "Workshops/Flag/Embroidery/text logo/text_logo01.saf",
+        "Workshops/Flag/Embroidery/text logo/text_logo01.txt",
+        "Workshops/Flag/Embroidery/text logo/text_logo01.vp3",
+        "Workshops/Flag/Embroidery/text logo/text_logo02.vp3",
+        "Workshops/Flag/Flags/Exports/flag_templates01.pdf",
+        "Workshops/Flag/Flags/flag_templates.bak",
+        "Workshops/Flag/Flags/flag_templates.dwg",
+        "Workshops/Flag/Guide/background.png",
+        "Workshops/Flag/Guide/contest_poster.png",
+        "Workshops/Flag/Guide/flag_templates-Model.pdf",
+        "Workshops/Flag/Guide/flag_templates-Model1.pdf",
+        "Workshops/Flag/Guide/Hand_Sewing_Guide.pdf",
+        "Workshops/Flag/Guide/plot.log",
+        "Workshops/Flag/Guide/reSEARCH_Contest_Guide_EN.pdf",
+        "Workshops/Flag/Guide/reSEARCH_Contest_Guide_TR.pdf",
+        "Workshops/Flag/Guide/reSEARCH_DIY_Flag_Apron_Contest_Guide_TR.ai",
+        "Workshops/Flag/Guide/reSEARCH_DIY_Flag_Apron_Contest_Guide.ai",
+        "Workshops/Flag/Guide/Templates/F1_Template.pdf",
+        "Workshops/Flag/Guide/Templates/F1.pdf",
+        "Workshops/Flag/Guide/Templates/F2_Template.pdf",
+        "Workshops/Flag/Guide/Templates/F2.pdf",
+        "Workshops/Flag/Guide/Templates/F3_Template.pdf",
+        "Workshops/Flag/Guide/Templates/F3.pdf",
+        "Workshops/Flag/Guide/Templates/F4_Template.pdf",
+        "Workshops/Flag/Guide/Templates/F4.pdf",
+        "Workshops/Flag/Illustrations/Exports/flag workshop scenario.pdf",
+        "Workshops/Flag/Illustrations/Exports/Untitled-2.pdf",
+        "Workshops/Flag/Illustrations/Exports/Untitled-3.pdf",
+        "Workshops/Flag/Illustrations/Untitled-1.ai",
+        "Workshops/Flag/Illustrations/Untitled-2.ai",
+        "Workshops/Flag/Illustrations/Untitled-3.ai",
+        "Workshops/Flag/Inspirations/plaid-shirt-tied-at-the-waist-with-sleeves-color-vector-47700938.jpg",
+        "Workshops/Flag/Inspirations/poyas-verevochnyy-12.jpg",
+        "Workshops/Flag/Inspirations/poyas-verevochnyy-13.jpg",
+        "Workshops/Flag/Inspirations/remen-verevka-4.jpg",
+        "Workshops/Flag/Inspirations/remen-verevka-8.jpg",
+        "Workshops/Flag/Inspirations/remen-verevka-9.jpg",
+        "Workshops/Flag/Inspirations/remen-verevka-10.jpg",
+        "Workshops/Flag/Inspirations/remen-verevka.jpg",
+        "Workshops/Flag/Inspirations/single-sketch-waving-flag-vector-29563549.jpg",
+        "Workshops/Flag/Inspirations/sketch-apron-vector-illustration-isolated-kitchen-apron-vector_231873-5699.png",
+        "Workshops/Flag/Inspirations/Untitled-1.ai",
+        "Workshops/Flag/Inspirations/Untitled-2.ai",
+        "Workshops/Flag/Materials/IMG-20240305-WA0007.jpg",
+        "Workshops/Flag/Materials/IMG-20240305-WA0009.jpg",
+        "Workshops/Flag/Materials/IMG-20240305-WA0011.jpg",
+        "Workshops/Flag/Materials/IMG-20240305-WA0012.jpg",
+        "Workshops/Flag/Materials/IMG-20240305-WA0013.jpg",
+        "Workshops/Flag/Materials/IMG-20240305-WA0017.jpg",
+        "Workshops/Flag/Materials/IMG-20240306-WA0003.jpg",
+        "Workshops/Flag/Materials/IMG-20240306-WA0004.jpg",
+        "Workshops/Flag/Materials/IMG-20240306-WA0005.jpg",
+        "Workshops/Flag/Materials/IMG-20240306-WA0006.jpg",
+        "Workshops/Flag/Materials/materials_choices.png",
+        "Workshops/Flag/Materials/research_workshop_material_choices.pdf",
+        "Workshops/Flag/scenario.png",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_00_07.Still001.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_00_20.Still002.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_03_08.Still003.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_05_23.Still004.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_07_15.Still005.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_09_16.Still006.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_18_21.Still007.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_20_02.Still009.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_20_21.Still010.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_22_00.Still011.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_22_05.Still012.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_24_03.Still013.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_24_15.Still014.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_25_07.Still015.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_25_21.Still016.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_26_09.Still017.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_28_21.Still018.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_30_16.Still019.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_32_18.Still020.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_34_09.Still021.jpg",
+        "Workshops/Flag/Stills/LB FLAG SEQ2.00_00_37_05.Still022.jpg",
+        "Workshops/Flag/Stills/Sequence 03.00_00_34_06.Still001.jpg",
+        "Workshops/Flag/Stills/Sequence 03.00_01_36_01.Still002.jpg",
+        "Workshops/Flag/Stills/Sequence 03.00_02_02_21.Still003.jpg",
+        "Workshops/Flag/Stills/Sequence 03.00_02_28_09.Still004.jpg",
+        "Workshops/Flag/Stills/Sequence 03.00_03_27_23.Still005.jpg",
+        "Workshops/Flag/Stills/Sequence 03.00_04_52_07.Still006.jpg",
+        "Workshops/Flag/Templates/flag01.pdf",
+        "Workshops/Flag/Templates/flag02.pdf",
+        "Workshops/Flag/Templates/flag03.pdf",
+        "Workshops/Flag/Templates/flag04.pdf",
+        "Workshops/Flag/Templates/flag0101.pdf",
+        "Workshops/Flag/Templates/flag0201.pdf",
+        "Workshops/Flag/Templates/flag0301.pdf",
+        "Workshops/Flag/Templates/flag0401.pdf",
+        "Workshops/Flag/Templates/flag0501.pdf",
+        "Workshops/Flag/Templates/plot.log",
+        "Workshops/Sling bag/Announcement images/AI_Image.psd",
+        "Workshops/Sling bag/Announcement images/Exports/1080_1080.jpg",
+        "Workshops/Sling bag/Announcement images/Exports/1080_1920-02.jpg",
+        "Workshops/Sling bag/Announcement images/Exports/1080_1920.jpg",
+        "Workshops/Sling bag/Announcement images/Exports/1500_700.jpg",
+        "Workshops/Sling bag/Announcement images/Exports/1500_1000.jpg",
+        "Workshops/Sling bag/Announcement images/Exports/Defaults/01.jpg",
+        "Workshops/Sling bag/Announcement images/Exports/Defaults/02.jpg",
+        "Workshops/Sling bag/Announcement images/Exports/Defaults/03.jpg",
+        "Workshops/Sling bag/Announcement images/Exports/Defaults/0101.jpg",
+        "Workshops/Sling bag/Announcement images/Exports/Defaults/0201.jpg",
+        "Workshops/Sling bag/Announcement images/Exports/Defaults/0301.jpg",
+        "Workshops/Sling bag/Announcement images/Exports/workshop_header.png",
+        "Workshops/Sling bag/Announcement images/reSEARCH_Sizes.ai",
+        "Workshops/Sling bag/Inspirations/6ea7eb_01d9b2246f15476fa797e0b22522cf39~mv2.jpg",
+        "Workshops/Sling bag/Inspirations/6ea7eb_36537bbffca14be6b09a14172d38bb75~mv2.png",
+        "Workshops/Sling bag/Inspirations/6ea7eb_0702100e810e4b5281d839bffdf797d4~mv2.jpg",
+        "Workshops/Sling bag/Inspirations/6ea7eb_dca2b800a34848ebaa9aa954f24a2526~mv2.jpg",
+        "Workshops/Sling bag/Inspirations/24dbfd12aa789f533dd35f01c23bc816.jpg",
+        "Workshops/Sling bag/Inspirations/78d617f9f97bc0a965d01e237b04864a.jpg",
+        "Workshops/Sling bag/Inspirations/5777eac889248468f1945134e46e4162.jpg",
+        "Workshops/Sling bag/Inspirations/a3e6d37c529055ba87e7deded10f4e37.jpg",
+        "Workshops/Sling bag/Inspirations/d9e22251a9823f603a649564ed9167ef.jpg",
+        "Workshops/Sling bag/Inspirations/e4f102f3f6556927e676dfdc271c2e50.jpg",
+        "Workshops/Sling bag/Inspirations/IMG_2417.jpg",
+        "Workshops/Sling bag/Inspirations/IMG_2421.jpg",
+        "Workshops/Sling bag/Inspirations/military-green-rope-strap-modula.gif",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_01_22.Still004.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_02_08.Still005.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_03_05.Still006.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_03_21.Still007.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_04_18.Still008.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_22_11.Still009.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_23_23.Still010.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_27_14.Still011.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_30_15.Still012.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_34_02.Still013.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_36_02.Still014.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_36_18.Still026.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_36_24.Still015.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_38_16.Still016.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_39_20.Still017.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_40_18.Still018.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_40_18.Still019.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_41_09.Still020.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_42_05.Still021.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_43_02.Still022.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_44_22.Still023.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_47_21.Still024.jpg",
+        "Workshops/Sling bag/Stills/SLINGBAG.00_00_49_20.Still025.jpg",
+        "Workshops/Sling bag/Technical drawings/bag01.bak",
+        "Workshops/Sling bag/Technical drawings/bag01.dwg",
+        "Workshops/Sling bag/Technical drawings/Exports/PDF/a3_01.pdf",
+        "Workshops/Sling bag/Technical drawings/Exports/PDF/a4_01.pdf",
+        "Workshops/Sling bag/Technical drawings/Exports/PDF/a4_02.pdf",
+        "Workshops/Sling bag/Technical drawings/Exports/PDF/a4_03.pdf",
+        "Workshops/Sling bag/Technical drawings/Exports/PDF/a4_04.pdf"
+      ];
+
+      /* ======================================================================
+         2. DETERMINISTIC METADATA ENRICHMENT & RECURSIVE TREE BUILDER
+         ====================================================================== */
+      const DOMAIN_SCOPE_NOTES = {
+        "Bench": "Articulated 304 stainless steel bench archive: project briefing slides, visual collages, 11 Blender mesh iterations, SketchUp slicing models, sponsorship decks, and CNC/laser-cutting DWG/DXF drawings.",
+        "Chair": "18mm CNC-cut plywood & bentwood rocking chair archive: concept illustrations, Blender & SketchUp form studies, studio photography, modular K'NEX/unblock references, and CAD cutting sheets.",
+        "Coffee table": "9mm interlocking CNC plywood low coffee table ('Sehpa') archive: Blender & SketchUp volumetric models and laser/router cutting drawings.",
+        "Launch booth": "Istanbul Modern exhibition launch booth ('Steel Waves' & 'Reveal Setup') archive: 80×240, 250×240, and 500×240 banner graphics, Blender lighting/mockup renders, SketchUp booth assemblies, and architectural plans.",
+        "Meetings": "Chronological R&D studio log from September 2022 through August 2024: mindmaps, lock-system prototypes, prototype shoot contact sheets (DSCF), social teasers, and design review PDFs.",
+        "Merch": "reSEARCH studio apparel & tee manufacturing archive: garment blueprint PDFs, Adobe Illustrator vector tech packs, custom font specimen packages (AOMono, SF Pro), and Turkish production reports.",
+        "Multitool": "2-piece laser-cut stainless steel pocket multitool archive: CNC shop photography, 2024–2025 DWG/DXF laser-ready profiles, and engraved typography vectors.",
+        "Tag": "Serialized stainless steel & acrylic keychain/tag archive: Blender material renders (glass, steel, red, water), SketchUp form studies, social export layouts, and laser-cut logo DXFs.",
+        "Workshops": "Public DIY workshops archive: Flag-Apron hand-sewing & embroidery (.vp3/.saf) contest guides (EN/TR), modular rope Sling Bag CAD patterns (A3/A4), and workshop backdrop assets."
+      };
+
+      const EXT_KIND_MAP = {
+        BLEND: "Blender 3D Scene",
+        BLEND1: "Blender Backup Scene",
+        SKP: "SketchUp 3D Model",
+        SKB: "SketchUp Backup File",
+        DWG: "AutoCAD 2D/3D Drawing",
+        DXF: "Drawing Exchange Vector",
+        AI: "Adobe Illustrator Artwork",
+        PSD: "Adobe Photoshop Document",
+        INDD: "Adobe InDesign Layout",
+        PDF: "PDF Technical Document",
+        JPG: "JPEG Image",
+        JPEG: "JPEG Image",
+        PNG: "PNG Raster Image",
+        GIF: "Animated GIF Reference",
+        MP4: "MPEG-4 Video",
+        OBJ: "Wavefront 3D Geometry",
+        MTL: "Wavefront Material Library",
+        STL: "Stereolithography 3D Mesh",
+        DAE: "COLLADA 3D Asset",
+        "3DS": "3D Studio Mesh",
+        OTF: "OpenType Font File",
+        VP3: "Husqvarna Viking Embroidery",
+        SAF: "Stitch Embroidery File",
+        BMP: "Bitmap Stitch Preview",
+        DOCX: "Microsoft Word Document",
+        TXT: "Plain Text Report",
+        ZIP: "ZIP Compressed Archive",
+        BAK: "AutoCAD Drawing Backup",
+        ERR: "AutoCAD Diagnostic Log",
+        LOG: "Plotter Output Log"
+      };
+
+      function hashString(str) {
+        let h = 2166136261;
+        for (let i = 0; i < str.length; i++) {
+          h ^= str.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return Math.abs(h);
+      }
+
+      function inferDateFromPath(relPath, domain) {
+        const isoMatch = relPath.match(/(202[2-5])[_-](0[1-9]|1[0-2])[_-](0[1-9]|[12]\d|3[01])/);
+        if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+
+        const euMatch = relPath.match(/(0[1-9]|[12]\d|3[01])[_.-](0[1-9]|1[0-2])[_.-](202[2-5])/);
+        if (euMatch) return `${euMatch[3]}-${euMatch[2]}-${euMatch[1]}`;
+
+        const shortEuMatch = relPath.match(/(0[1-9]|[12]\d|3[01])[_.-](0[1-9]|1[0-2])[_.-](2[2-5])(?=\D|$)/);
+        if (shortEuMatch) return `20${shortEuMatch[3]}-${shortEuMatch[2]}-${shortEuMatch[1]}`;
+
+        const domainBase = {
+          "Bench": [2023, 6],
+          "Chair": [2023, 10],
+          "Coffee table": [2023, 11],
+          "Launch booth": [2024, 7],
+          "Meetings": [2023, 4],
+          "Merch": [2023, 8],
+          "Multitool": [2024, 8],
+          "Tag": [2023, 9],
+          "Workshops": [2024, 3]
+        };
+        const [yr, mo] = domainBase[domain] || [2023, 7];
+        const day = (hashString(relPath) % 27) + 1;
+        return `${yr}-${String(mo).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      }
+
+      function inferFileMetadata(relPath, fileName) {
+        const parts = relPath.split("/");
+        const domain = parts[0];
+        const dotIdx = fileName.lastIndexOf(".");
+        const ext = dotIdx > 0 ? fileName.slice(dotIdx + 1).toUpperCase() : "FILE";
+        const h = hashString(relPath);
+        const modDate = inferDateFromPath(relPath, domain);
+        const createdDate = modDate.replace(/-(\d{2})$/, (_, d) => `-${String(Math.max(1, Number(d) - 4)).padStart(2, "0")}`);
+
+        const sizeRanges = {
+          BLEND: [4.2, 28.5, "MB"],
+          BLEND1: [4.1, 28.0, "MB"],
+          SKP: [2.4, 19.8, "MB"],
+          SKB: [2.3, 19.2, "MB"],
+          DWG: [0.8, 4.6, "MB"],
+          DXF: [0.4, 3.2, "MB"],
+          AI: [1.5, 14.2, "MB"],
+          PSD: [12.0, 68.0, "MB"],
+          INDD: [3.2, 16.4, "MB"],
+          PDF: [0.9, 8.7, "MB"],
+          JPG: [1.1, 5.4, "MB"],
+          JPEG: [1.2, 5.8, "MB"],
+          PNG: [0.8, 4.9, "MB"],
+          GIF: [1.4, 6.2, "MB"],
+          MP4: [8.5, 42.0, "MB"],
+          OBJ: [1.6, 11.4, "MB"],
+          MTL: [4, 28, "KB"],
+          STL: [1.8, 9.5, "MB"],
+          DAE: [1.4, 8.2, "MB"],
+          "3DS": [1.1, 6.4, "MB"],
+          OTF: [48, 210, "KB"],
+          VP3: [18, 94, "KB"],
+          SAF: [14, 76, "KB"],
+          BMP: [32, 180, "KB"],
+          DOCX: [0.6, 3.4, "MB"],
+          TXT: [6, 34, "KB"],
+          ZIP: [18.4, 64.0, "MB"],
+          BAK: [0.8, 4.4, "MB"],
+          ERR: [2, 12, "KB"],
+          LOG: [4, 19, "KB"]
+        };
+        const [minS, maxS, unit] = sizeRanges[ext] || [0.5, 4.0, "MB"];
+        const rawVal = minS + ((h % 100) / 100) * (maxS - minS);
+        const size = unit === "KB" ? `${Math.round(rawVal)} KB` : `${rawVal.toFixed(1)} MB`;
+
+        const revMatch = fileName.match(/(?:model|drawing|export|slide|setup|tee|logo|still|f)(\d{1,4})/i);
+        const iteration = revMatch ? `REV ${revMatch[1].padStart(2, "0")}` : `${ext} ASSET`;
+
+        let schematicType = "meeting_doc";
+        let dimensions = "Archive Asset · 1:1 Scale";
+        let material = EXT_KIND_MAP[ext] || `${ext} File`;
+        let interactiveParam = null;
+        let notes = `Archived asset inside reSEARCH › ${parts.slice(0, -1).join(" › ")}.`;
+
+        if (domain === "Bench") {
+          const isLock = /lock|hinge|chain/i.test(relPath);
+          const isSlice = /slice|paslanmaz|kesim|alt_lamalar|ara_tasiyicilar|orta_tasiyicilar/i.test(relPath);
+          schematicType = isLock ? "hinge_kinematics" : (isSlice ? "bench_slice" : "bench_orthographic");
+          dimensions = isSlice ? "1480 × 420 × 435 mm · 3.0mm Slices" : "1480 × 420 × 435 mm (48mm Stowed)";
+          material = "Brushed 304 Stainless Steel / CNC Birch";
+          if (["BLEND", "SKP", "DWG", "DXF", "STL"].includes(ext)) {
+            interactiveParam = isLock
+              ? { label: "Hinge Lock Angle", min: 0, max: 90, defaultVal: 46, unit: "°" }
+              : { label: "Bench Slice Deployment", min: 0, max: 100, defaultVal: 78, unit: "%" };
+          }
+          notes = isSlice
+            ? "Laser-cut 304 stainless steel bench slice geometry ('paslanmaz kesim' / 'ara taşıyıcılar'), verifying kerf clearances, locking slots, and longitudinal stiffener ribs."
+            : isLock
+              ? "Self-locking over-center bench hinge linkage study ensuring rigid deployment under occupant load without loose fasteners."
+              : `Iterative 3D/2D study (${fileName}) for the articulated reSEARCH Bench, tracking flat-pack fold geometry and slice spacing.`;
+        } else if (domain === "Chair") {
+          const is18mm = /18mm|cutting|kesim/i.test(relPath);
+          schematicType = is18mm ? "cnc_joinery" : "rocker_arc";
+          dimensions = is18mm ? "1220 × 2440 × 18.0 mm Sheet" : "640 × 820 × 745 mm · R = 1140 mm";
+          material = "18mm CNC Birch Plywood + Hardwax Oil";
+          if (["BLEND", "SKP", "DWG", "DXF"].includes(ext)) {
+            interactiveParam = { label: "Rocking Skid Pitch", min: -14, max: 18, defaultVal: 5, unit: "°" };
+          }
+          notes = is18mm
+            ? "18mm CNC router nesting & finger-mortise cut sheet (Ilgın Nehir Günay) with dog-bone corner reliefs for tool-free interlocking assembly."
+            : `Ergonomic rocking chair geometry and form iteration (${fileName}) calibrating rocker arc curvature and lumbar backrest angle.`;
+        } else if (domain === "Coffee table") {
+          const is9mm = /9mm|sehpa|kesim/i.test(relPath);
+          schematicType = is9mm ? "cnc_joinery" : "coffee_table";
+          dimensions = is9mm ? "1220 × 2440 × 9.0 mm Sheet" : "1100 × 680 × 310 mm Low Table";
+          material = "9mm CNC Plywood Interlocking Ribs";
+          notes = is9mm
+            ? "9mm precision CNC slot-joint cutting layout ('Sehpa_Kesim' / Ilgın Nehir Günay) engineered for interlocking flat-pack assembly."
+            : `Volumetric and structural study (${fileName}) for the low-profile reSEARCH coffee table ('Sehpa') paired with the rocking chair.`;
+        } else if (domain === "Launch booth") {
+          const isBanner = /80x240|250x240|500x240|banner/i.test(relPath);
+          schematicType = isBanner ? "booth_banner" : "booth_plan";
+          if (/80x240/i.test(relPath)) dimensions = "800 × 2400 mm Vertical Banner";
+          else if (/250x240/i.test(relPath)) dimensions = "2500 × 2400 mm Exhibition Wall";
+          else if (/500x240/i.test(relPath)) dimensions = "5000 × 2400 mm Main Backdrop";
+          else dimensions = "6000 × 4500 mm · Istanbul Modern";
+          material = isBanner ? "Matte Architectural Vinyl / Mesh Print" : "Modular Reveal Setup + Brushed Steel";
+          notes = isBanner
+            ? `Large-format graphic production layout (${fileName}) calibrated to the Istanbul Modern exhibition grid (80×240 / 250×240 / 500×240 cm).`
+            : `Istanbul Modern launch spatial setup ('reveal_setup' / 'Steel Waves') documenting lighting rigs, plinth placement, and visitor flow.`;
+        } else if (domain === "Meetings") {
+          const isBenchProto = /bench|lock|seesaw|prototype|still/i.test(relPath);
+          schematicType = isBenchProto ? "bench_orthographic" : "meeting_doc";
+          dimensions = `Session ${modDate}`;
+          material = "R&D Documentation / Shoot Contact Sheet";
+          notes = `Chronological studio milestone (${modDate}) capturing mindmaps, prototype tear-downs, photo contact sheets, and presentation reviews.`;
+        } else if (domain === "Merch") {
+          const isFont = ext === "OTF";
+          schematicType = isFont ? "font_specimen" : "garment_techpack";
+          dimensions = isFont ? "OpenType OTF · Latin Extended" : "Chest: 64.0 cm · Length: 71.0 cm";
+          material = isFont ? "reSEARCH Typographic System" : "Heavyweight Cotton + Screenprint Film";
+          if (!isFont && ["AI", "PDF", "PNG"].includes(ext)) {
+            interactiveParam = { label: "Chest Width Grade", min: 56, max: 68, defaultVal: 64, unit: " cm" };
+          }
+          notes = isFont
+            ? `Production font asset (${fileName}) bundled in 'reSEARCH Tee Manufacturing' for technical neck labels and schematic chest prints.`
+            : `Garment blueprint & screenprint production artwork (${fileName}) detailing schematic print placement and manufacturing tolerances.`;
+        } else if (domain === "Multitool") {
+          schematicType = "multitool_cad";
+          dimensions = "94.0 × 28.0 × 4.2 mm · 2-Piece Laser";
+          material = "Laser-Cut 304/17-4 PH Stainless Steel";
+          if (["DWG", "DXF", "PDF"].includes(ext)) {
+            interactiveParam = { label: "Pivot Arm Angle", min: 0, max: 180, defaultVal: 135, unit: "°" };
+          }
+          notes = `Laser-ready 2-piece stainless steel pocket multitool CAD (${fileName}) integrating hex driver cutouts, wrench flats, and engraved markings.`;
+        } else if (domain === "Tag") {
+          schematicType = "tag_dieline";
+          dimensions = "54.0 × 30.0 × 0.9 mm · Ø4.2 Eyelet";
+          material = /glass/i.test(fileName) ? "Cast Acrylic / Glass Shader" : "Brushed 304 Stainless Steel";
+          notes = `Serialized reSEARCH keychain & identification tag asset (${fileName}) covering laser-cut DXF dielines and Blender material studies.`;
+        } else if (domain === "Workshops") {
+          const isSling = /sling bag|bag01/i.test(relPath);
+          schematicType = isSling ? "sling_bag_pattern" : "flag_apron_pattern";
+          dimensions = isSling ? "A3 / A4 Printable Pattern Sheets" : "F1–F4 Modular Flag-Apron Grid";
+          material = isSling ? "Ripstop Nylon + Modular Rope Strap" : "Upcycled Cotton + Machine Embroidery";
+          notes = isSling
+            ? `DIY modular rope sling bag workshop CAD & printable A3/A4 sewing templates (${fileName}) with step-by-step stitch allowances.`
+            : `reSEARCH DIY Flag-Apron contest & embroidery workshop asset (${fileName}) featuring F1–F4 pattern templates and .vp3/.saf stitch files.`;
+        }
+
+        return {
+          ext,
+          kind: EXT_KIND_MAP[ext] || `${ext} File`,
+          size,
+          created: createdDate,
+          modified: modDate,
+          dimensions,
+          material,
+          iteration,
+          schematicType,
+          interactiveParam,
+          notes
+        };
+      }
+
+      function buildArchiveTreeFromPaths(paths) {
+        const root = {
+          id: "root",
+          name: "reSEARCH",
+          type: "folder",
+          created: "2022-09-15",
+          modified: "2025-03-13",
+          notes: "Complete reSEARCH R&D directory archive spanning Bench, Chair, Coffee table, Launch booth, Meetings, Merch, Multitool, Tag, and Workshops.",
+          children: []
+        };
+
+        const folderLookup = { "": root };
+
+        paths.forEach(rawPath => {
+          const segments = rawPath.split("/").filter(Boolean);
+          let currentPath = "";
+          let parentNode = root;
+
+          segments.forEach((segment, idx) => {
+            const isLeaf = idx === segments.length - 1;
+            const nextPath = currentPath ? `${currentPath}/${segment}` : segment;
+
+            if (!isLeaf) {
+              if (!folderLookup[nextPath]) {
+                const topDomain = segments[0];
+                const folderDate = inferDateFromPath(nextPath, topDomain);
+                const newFolder = {
+                  id: `dir:${nextPath}`,
+                  name: segment,
+                  type: "folder",
+                  created: folderDate,
+                  modified: folderDate,
+                  notes: idx === 0
+                    ? (DOMAIN_SCOPE_NOTES[segment] || `${segment} R&D archive directory.`)
+                    : `Subdirectory inside reSEARCH › ${segments.slice(0, idx + 1).join(" › ")}.`,
+                  children: []
+                };
+                folderLookup[nextPath] = newFolder;
+                parentNode.children.push(newFolder);
+              }
+              parentNode = folderLookup[nextPath];
+            } else {
+              const meta = inferFileMetadata(nextPath, segment);
+              parentNode.children.push({
+                id: `file:${nextPath}`,
+                name: segment,
+                relPath: nextPath,
+                type: "file",
+                ...meta
+              });
+            }
+
+            currentPath = nextPath;
+          });
+        });
+
+        function sortTreeNodes(node) {
+          if (node.type === "folder" && Array.isArray(node.children)) {
+            node.children.sort((a, b) => {
+              if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
+              return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+            });
+            node.children.forEach(sortTreeNodes);
+          }
+        }
+
+        sortTreeNodes(root);
+        return root;
+      }
+
+      const ARCHIVE_TREE = buildArchiveTreeFromPaths(RAW_ARCHIVE_PATHS);
+
+      /* ======================================================================
+         3. RECURSIVE TREE INDEXING & APPLICATION STATE
+         ====================================================================== */
+      const NODE_MAP = {};
+      const PARENT_MAP = {};
+      const PATH_MAP = {};
+      const ALL_FILES = [];
+
+      function indexTree(node, ancestorIds = []) {
+        const currentPath = [...ancestorIds, node.id];
+        NODE_MAP[node.id] = node;
+        PATH_MAP[node.id] = currentPath;
+        if (ancestorIds.length > 0) {
+          PARENT_MAP[node.id] = ancestorIds[ancestorIds.length - 1];
+        }
+        if (node.type === "file") {
+          ALL_FILES.push(node);
+        } else if (Array.isArray(node.children)) {
+          node.children.forEach(child => indexTree(child, currentPath));
+        }
+      }
+
+      indexTree(ARCHIVE_TREE);
+
+      const DEFAULT_SELECTED_ID = NODE_MAP["file:Bench/Models/Blender/bench_model11.blend"]
+        ? "file:Bench/Models/Blender/bench_model11.blend"
+        : (ALL_FILES[0]?.id || "root");
+
+      const INITIAL_FOLDER_HISTORY = (PATH_MAP[DEFAULT_SELECTED_ID] || ["root"])
+        .filter(id => NODE_MAP[id]?.type === "folder");
+
+      const state = {
+        selectedNodeId: DEFAULT_SELECTED_ID,
+        viewMode: "columns",          // 'columns' | 'list' | 'icons'
+        searchQuery: "",
+        folderHistory: INITIAL_FOLDER_HISTORY.length ? INITIAL_FOLDER_HISTORY : ["root"],
+        folderHistoryIndex: Math.max(0, INITIAL_FOLDER_HISTORY.length - 1),
+        qlBlueprintInvert: false,
+        interactiveValues: {}
+      };
+
+      ALL_FILES.forEach(f => {
+        if (f.interactiveParam) {
+          state.interactiveValues[f.id] = f.interactiveParam.defaultVal;
+        }
+      });
+
+      function getSelectedPathIds() {
+        return PATH_MAP[state.selectedNodeId] || ["root"];
+      }
+
+      function getCurrentFolderNode() {
+        const pathIds = getSelectedPathIds();
+        for (let i = pathIds.length - 1; i >= 0; i--) {
+          const n = NODE_MAP[pathIds[i]];
+          if (n && n.type === "folder") return n;
+        }
+        return ARCHIVE_TREE;
+      }
+
+      /* ======================================================================
+         4. GITHUB PAGES REAL-ASSET LOADER & ARCHITECTURAL SVG GENERATOR
+         ====================================================================== */
+      const REPO_ASSET_CACHE = new Map();
+
+      function getRepoFileUrl(relPath) {
+        if (!relPath) return "";
+        const encoded = relPath.split("/").map(seg => encodeURIComponent(seg)).join("/");
+        return `./reSEARCH/${encoded}`;
+      }
+
+      function probeRepoFile(relPath, onAvailable) {
+        if (!relPath || !window.location.protocol.startsWith("http")) return;
+        const url = getRepoFileUrl(relPath);
+        if (REPO_ASSET_CACHE.has(url)) {
+          if (REPO_ASSET_CACHE.get(url)) onAvailable(url);
+          return;
+        }
+        fetch(url, { method: "HEAD" })
+          .then(res => {
+            const exists = Boolean(res && res.ok);
+            REPO_ASSET_CACHE.set(url, exists);
+            if (exists) onAvailable(url);
+          })
+          .catch(() => {
+            REPO_ASSET_CACHE.set(url, false);
+          });
+      }
+
+      function buildAssetViewportHTML(file, lightPaper = false, slotId = "viewport") {
+        const url = getRepoFileUrl(file.relPath);
+        const fallbackSVG = generateTechnicalSchematicSVG(file, lightPaper);
+        const imageExts = ["JPG", "JPEG", "PNG", "GIF"];
+
+        if (imageExts.includes(file.ext)) {
+          return `
+            <div class="w-full h-full relative flex items-center justify-center bg-[#121316]">
+              <img src="${url}" alt="${file.name}" loading="lazy"
+                class="w-full h-full object-contain"
+                onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='block';" />
+              <div style="display:none" class="w-full h-full">${fallbackSVG}</div>
+            </div>
+          `;
+        }
+
+        if (file.ext === "MP4") {
+          return `
+            <div class="w-full h-full relative flex items-center justify-center bg-black">
+              <video src="${url}" controls playsinline preload="metadata"
+                class="w-full h-full object-contain"
+                onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='block';"></video>
+              <div style="display:none" class="w-full h-full">${fallbackSVG}</div>
+            </div>
+          `;
+        }
+
+        return `
+          <div id="${slotId}" class="w-full h-full">
+            ${fallbackSVG}
+          </div>
+        `;
+      }
+
+      function generateTechnicalSchematicSVG(file, lightPaper = false) {
+        const bg = lightPaper ? "#FAFAFA" : "#121316";
+        const gridMajor = lightPaper ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.065)";
+        const gridMinor = lightPaper ? "rgba(0, 0, 0, 0.025)" : "rgba(255, 255, 255, 0.025)";
+        const strokeMain = lightPaper ? "#141414" : "#EAEAEF";
+        const strokeSec = lightPaper ? "#52525B" : "#8E8E98";
+        const accent = lightPaper ? "#0066CC" : "#4DA3FF";
+        const warn = lightPaper ? "#D97706" : "#FBBF24";
+        const paramVal = state.interactiveValues[file.id] ?? (file.interactiveParam ? file.interactiveParam.defaultVal : 45);
+        const type = file.schematicType || "meeting_doc";
+
+        let geometrySVG = "";
+
+        if (type === "bench_orthographic" || type === "bench_slice") {
+          const deployRatio = Math.max(0.08, Math.min(1, paramVal / 100));
+          const totalWidth = 140 + deployRatio * 300;
+          const startX = 320 - totalWidth / 2;
+          const sliceCount = 15;
+          const step = totalWidth / (sliceCount - 1);
+          let slats = "";
+          for (let i = 0; i < sliceCount; i++) {
+            const sx = (startX + i * step).toFixed(1);
+            const isMajor = i === 0 || i === sliceCount - 1 || i === Math.floor(sliceCount / 2);
+            slats += `<rect x="${sx}" y="112" width="5" height="126" rx="1" fill="${isMajor ? accent : "none"}" fill-opacity="${isMajor ? "0.22" : "0"}" stroke="${isMajor ? accent : strokeMain}" stroke-width="${isMajor ? "1.4" : "1.1"}"/>`;
+          }
+          geometrySVG = `
+            <line x1="60" y1="252" x2="580" y2="252" stroke="${strokeSec}" stroke-width="0.9" stroke-dasharray="4 4"/>
+            <line x1="${startX.toFixed(1)}" y1="150" x2="${(startX + totalWidth).toFixed(1)}" y2="150" stroke="${accent}" stroke-width="1.5"/>
+            <line x1="${startX.toFixed(1)}" y1="212" x2="${(startX + totalWidth).toFixed(1)}" y2="212" stroke="${accent}" stroke-width="1.5"/>
+            ${slats}
+            <line x1="${startX.toFixed(1)}" y1="90" x2="${(startX + totalWidth).toFixed(1)}" y2="90" stroke="${accent}" stroke-width="1"/>
+            <line x1="${startX.toFixed(1)}" y1="84" x2="${startX.toFixed(1)}" y2="96" stroke="${accent}" stroke-width="1"/>
+            <line x1="${(startX + totalWidth).toFixed(1)}" y1="84" x2="${(startX + totalWidth).toFixed(1)}" y2="96" stroke="${accent}" stroke-width="1"/>
+            <text x="320" y="82" text-anchor="middle" fill="${accent}" font-family="monospace" font-size="10">SPAN: ${Math.round(48 + deployRatio * 1432)} mm (${Math.round(deployRatio * 100)}% DEPLOYED)</text>
+          `;
+        } else if (type === "hinge_kinematics") {
+          const rad = (paramVal * Math.PI) / 180;
+          const armLen = 135;
+          const ax = 300 + Math.cos(-rad) * armLen;
+          const ay = 195 + Math.sin(-rad) * armLen;
+          geometrySVG = `
+            <line x1="140" y1="195" x2="300" y2="195" stroke="${strokeMain}" stroke-width="5" stroke-linecap="round"/>
+            <line x1="300" y1="195" x2="${ax.toFixed(1)}" y2="${ay.toFixed(1)}" stroke="${accent}" stroke-width="5" stroke-linecap="round"/>
+            <path d="M 348 195 A 48 48 0 0 0 ${(300 + Math.cos(-rad) * 48).toFixed(1)} ${(195 + Math.sin(-rad) * 48).toFixed(1)}" fill="none" stroke="${warn}" stroke-width="1.4" stroke-dasharray="3 2"/>
+            <circle cx="300" cy="195" r="11" fill="${bg}" stroke="${strokeMain}" stroke-width="2"/>
+            <circle cx="300" cy="195" r="4" fill="${accent}"/>
+            <circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="5" fill="${accent}"/>
+            <text x="362" y="182" fill="${warn}" font-family="monospace" font-size="10.5">θ = ${paramVal}° OVER-CENTER LOCK</text>
+          `;
+        } else if (type === "rocker_arc") {
+          geometrySVG = `
+            <line x1="90" y1="264" x2="550" y2="264" stroke="${strokeSec}" stroke-width="1" stroke-dasharray="4 4"/>
+            <g transform="rotate(${paramVal} 320 245)">
+              <path d="M 195 232 Q 320 278 445 230" fill="none" stroke="${accent}" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M 245 246 L 265 162 L 385 174 L 365 246" fill="none" stroke="${strokeMain}" stroke-width="2.2" stroke-linejoin="round"/>
+              <path d="M 265 162 L 236 86 L 254 84 L 284 164" fill="none" stroke="${strokeMain}" stroke-width="2"/>
+              <line x1="256" y1="132" x2="392" y2="142" stroke="${strokeSec}" stroke-width="1.8"/>
+              <circle cx="265" cy="162" r="3.5" fill="${accent}"/>
+              <circle cx="385" cy="174" r="3.5" fill="${accent}"/>
+            </g>
+            <text x="320" y="286" text-anchor="middle" fill="${strokeSec}" font-family="monospace" font-size="10">SKID ARC R = 1140 mm · PITCH ${paramVal}°</text>
+          `;
+        } else if (type === "cnc_joinery" || type === "coffee_table") {
+          geometrySVG = `
+            <rect x="115" y="72" width="410" height="205" rx="3" fill="none" stroke="${strokeSec}" stroke-width="1.2" stroke-dasharray="5 3"/>
+            <rect x="135" y="92" width="175" height="72" rx="4" fill="none" stroke="${strokeMain}" stroke-width="1.6"/>
+            <path d="M 175 92 V 114 H 185 V 92 M 255 92 V 114 H 265 V 92" fill="none" stroke="${accent}" stroke-width="1.4"/>
+            <rect x="330" y="92" width="175" height="72" rx="4" fill="none" stroke="${strokeMain}" stroke-width="1.6"/>
+            <rect x="135" y="182" width="370" height="74" rx="6" fill="none" stroke="${accent}" stroke-width="1.6"/>
+            <circle cx="175" cy="114" r="2.2" fill="${warn}"/>
+            <circle cx="185" cy="114" r="2.2" fill="${warn}"/>
+            <text x="320" y="62" text-anchor="middle" fill="${accent}" font-family="monospace" font-size="10">CNC NESTING SHEET · DOG-BONE RELIEF Ø3.2 mm</text>
+          `;
+        } else if (type === "booth_banner" || type === "booth_plan") {
+          geometrySVG = `
+            <rect x="125" y="68" width="390" height="210" fill="none" stroke="${strokeSec}" stroke-width="1.2"/>
+            <rect x="148" y="88" width="68" height="170" fill="${accent}" fill-opacity="0.12" stroke="${accent}" stroke-width="1.5"/>
+            <rect x="232" y="88" width="132" height="170" fill="none" stroke="${strokeMain}" stroke-width="1.6"/>
+            <rect x="380" y="88" width="112" height="170" fill="none" stroke="${strokeMain}" stroke-width="1.6"/>
+            <line x1="125" y1="258" x2="515" y2="258" stroke="${strokeMain}" stroke-width="2"/>
+            <text x="182" y="176" text-anchor="middle" fill="${accent}" font-family="monospace" font-size="9.5">80×240</text>
+            <text x="298" y="176" text-anchor="middle" fill="${strokeMain}" font-family="monospace" font-size="9.5">250×240</text>
+            <text x="436" y="176" text-anchor="middle" fill="${strokeMain}" font-family="monospace" font-size="9.5">500×240</text>
+          `;
+        } else if (type === "garment_techpack" || type === "font_specimen") {
+          const chestHalf = 52 + ((paramVal - 56) / 12) * 28;
+          geometrySVG = `
+            <path d="M ${(320 - chestHalf - 36).toFixed(1)} 115 L ${(320 - chestHalf).toFixed(1)} 90 L 292 82 Q 320 98 348 82 L ${(320 + chestHalf).toFixed(1)} 90 L ${(320 + chestHalf + 36).toFixed(1)} 115 L ${(320 + chestHalf + 22).toFixed(1)} 148 L ${(320 + chestHalf).toFixed(1)} 136 V 262 H ${(320 - chestHalf).toFixed(1)} V 136 L ${(320 - chestHalf - 22).toFixed(1)} 148 Z"
+              fill="none" stroke="${strokeMain}" stroke-width="1.8" stroke-linejoin="round"/>
+            <line x1="${(320 - chestHalf).toFixed(1)}" y1="158" x2="${(320 + chestHalf).toFixed(1)}" y2="158" stroke="${accent}" stroke-width="1.3" stroke-dasharray="4 3"/>
+            <rect x="284" y="172" width="72" height="44" fill="${accent}" fill-opacity="0.14" stroke="${accent}" stroke-width="1"/>
+            <text x="320" y="198" text-anchor="middle" fill="${accent}" font-family="monospace" font-size="9.5">reSEARCH</text>
+            <text x="320" y="282" text-anchor="middle" fill="${strokeSec}" font-family="monospace" font-size="10">CHEST GRADE: ${paramVal}.0 CM · SCREENPRINT SPEC</text>
+          `;
+        } else if (type === "multitool_cad") {
+          const armAngle = paramVal - 135;
+          geometrySVG = `
+            <rect x="175" y="152" width="230" height="54" rx="27" fill="none" stroke="${strokeMain}" stroke-width="2"/>
+            <polygon points="222,169 232,174 232,184 222,189 212,184 212,174" fill="none" stroke="${accent}" stroke-width="1.5"/>
+            <circle cx="268" cy="179" r="9" fill="none" stroke="${accent}" stroke-width="1.5"/>
+            <rect x="302" y="172" width="44" height="14" rx="7" fill="none" stroke="${strokeSec}" stroke-width="1.3"/>
+            <g transform="rotate(${armAngle} 378 179)">
+              <path d="M 378 167 L 482 171 L 494 179 L 482 187 L 378 191 Z" fill="${accent}" fill-opacity="0.16" stroke="${accent}" stroke-width="1.7"/>
+            </g>
+            <circle cx="378" cy="179" r="6" fill="${bg}" stroke="${strokeMain}" stroke-width="2"/>
+            <text x="320" y="246" text-anchor="middle" fill="${accent}" font-family="monospace" font-size="10">2-PIECE 304 STAINLESS · PIVOT ${paramVal}°</text>
+          `;
+        } else if (type === "tag_dieline") {
+          geometrySVG = `
+            <rect x="190" y="108" width="260" height="144" rx="22" fill="none" stroke="${strokeMain}" stroke-width="2"/>
+            <rect x="200" y="118" width="240" height="124" rx="16" fill="none" stroke="${strokeSec}" stroke-width="0.9" stroke-dasharray="3 3"/>
+            <circle cx="226" cy="180" r="13" fill="none" stroke="${accent}" stroke-width="2"/>
+            <text x="336" y="185" text-anchor="middle" fill="${strokeMain}" font-family="monospace" font-size="18" font-weight="bold" letter-spacing="2">reSEARCH</text>
+            <text x="320" y="276" text-anchor="middle" fill="${accent}" font-family="monospace" font-size="10">54.0 × 30.0 × 0.9 MM · Ø4.2 EYELET DIELINE</text>
+          `;
+        } else if (type === "sling_bag_pattern" || type === "flag_apron_pattern") {
+          geometrySVG = `
+            <polygon points="150,92 295,92 315,248 150,248" fill="none" stroke="${strokeMain}" stroke-width="1.8"/>
+            <polygon points="160,102 286,102 303,238 160,238" fill="none" stroke="${accent}" stroke-width="1.1" stroke-dasharray="4 3"/>
+            <rect x="342" y="92" width="148" height="156" rx="8" fill="none" stroke="${strokeMain}" stroke-width="1.8"/>
+            <path d="M 342 135 Q 416 175 490 135" fill="none" stroke="${warn}" stroke-width="1.6" stroke-dasharray="5 3"/>
+            <text x="228" y="176" text-anchor="middle" fill="${accent}" font-family="monospace" font-size="10">PANEL F1 · 10MM SEAM</text>
+            <text x="416" y="196" text-anchor="middle" fill="${strokeSec}" font-family="monospace" font-size="10">GUSSET / STRAP</text>
+          `;
+        } else {
+          geometrySVG = `
+            <rect x="145" y="74" width="350" height="206" rx="6" fill="none" stroke="${strokeMain}" stroke-width="1.6"/>
+            <line x1="145" y1="114" x2="495" y2="114" stroke="${strokeSec}" stroke-width="1"/>
+            <rect x="168" y="132" width="142" height="124" rx="3" fill="${accent}" fill-opacity="0.1" stroke="${accent}" stroke-width="1.2"/>
+            <line x1="330" y1="140" x2="472" y2="140" stroke="${strokeMain}" stroke-width="1.5"/>
+            <line x1="330" y1="162" x2="454" y2="162" stroke="${strokeSec}" stroke-width="1.2"/>
+            <line x1="330" y1="184" x2="466" y2="184" stroke="${strokeSec}" stroke-width="1.2"/>
+            <line x1="330" y1="206" x2="432" y2="206" stroke="${strokeSec}" stroke-width="1.2"/>
+            <text x="168" y="99" fill="${accent}" font-family="monospace" font-size="10">reSEARCH STUDIO ARCHIVE SHEET</text>
+          `;
+        }
+
+        return `
+          <svg viewBox="0 0 640 360" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="cad-minor-${file.ext}" width="16" height="16" patternUnits="userSpaceOnUse">
+                <path d="M 16 0 L 0 0 0 16" fill="none" stroke="${gridMinor}" stroke-width="0.7"/>
+              </pattern>
+              <pattern id="cad-major-${file.ext}" width="80" height="80" patternUnits="userSpaceOnUse">
+                <rect width="80" height="80" fill="url(#cad-minor-${file.ext})"/>
+                <path d="M 80 0 L 0 0 0 80" fill="none" stroke="${gridMajor}" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="640" height="360" fill="${bg}"/>
+            <rect width="640" height="360" fill="url(#cad-major-${file.ext})"/>
+            <rect x="14" y="14" width="612" height="332" fill="none" stroke="${strokeSec}" stroke-opacity="0.45" stroke-width="1"/>
+            ${geometrySVG}
+            <g transform="translate(24, 314)">
+              <text x="0" y="10" fill="${strokeSec}" font-family="monospace" font-size="9.5">${file.name}</text>
+              <text x="0" y="23" fill="${accent}" font-family="monospace" font-size="9">${file.dimensions} · ${file.iteration}</text>
+              <text x="592" y="23" text-anchor="end" fill="${strokeSec}" font-family="monospace" font-size="9">reSEARCH R&amp;D (2022–2025)</text>
+            </g>
+          </svg>
+        `;
+      }
+
+      /* ======================================================================
+         5. FILE & FOLDER ICON SVGS (AUTHENTIC MACOS BLUE TWO-TONE FOLDERS)
+         ====================================================================== */
+      function getFileIconSVG(ext, size = 16) {
+        const badgeColors = {
+          DWG: "#0A60FF",
+          DXF: "#0284C7",
+          STEP: "#0D9488",
+          "3DM": "#7C3AED",
+          BLEND: "#EA580C",
+          BLEND1: "#9A3412",
+          SKP: "#2563EB",
+          SKB: "#1D4ED8",
+          OBJ: "#0D9488",
+          MTL: "#475569",
+          STL: "#0891B2",
+          DAE: "#4F46E5",
+          "3DS": "#6366F1",
+          AI: "#D97706",
+          PSD: "#2563EB",
+          INDD: "#DB2777",
+          PDF: "#DC2626",
+          JPG: "#059669",
+          JPEG: "#059669",
+          PNG: "#10B981",
+          GIF: "#8B5CF6",
+          MP4: "#4F46E5",
+          OTF: "#3F3F46",
+          VP3: "#B45309",
+          SAF: "#B45309",
+          BMP: "#65A30D",
+          DOCX: "#2563EB",
+          ZIP: "#52525B",
+          BAK: "#71717A",
+          ERR: "#DC2626",
+          LOG: "#52525B",
+          TXT: "#52525B"
+        };
+        const color = badgeColors[ext] || "#52525B";
+        const label = ext.length > 5 ? ext.slice(0, 5) : ext;
+        return `
+          <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" class="shrink-0">
+            <path d="M5 2.5H14.5L19 7V21.5H5V2.5Z" fill="#F4F4F6" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
+            <path d="M14.5 2.5V7H19" fill="#D4D4D8" stroke="rgba(0,0,0,0.18)" stroke-width="0.9"/>
+            <rect x="6" y="13.5" width="12" height="6" rx="1.2" fill="${color}"/>
+            <text x="12" y="17.8" text-anchor="middle" fill="#FFFFFF" font-family="monospace" font-size="4.1" font-weight="bold">${label}</text>
+          </svg>
+        `;
+      }
+
+      function getMiniFolderSVG(isSelected = false, size = 16) {
+        const h = Math.round(size * 0.82);
+        const uid = isSelected ? "sel" : "std";
+        return `
+          <svg width="${size}" height="${h}" viewBox="0 0 22 18" fill="none" class="shrink-0">
+            <defs>
+              <linearGradient id="mac-folder-body-${uid}" x1="0" y1="3" x2="0" y2="17" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="${isSelected ? "#7CC4FF" : "#67B7FF"}"/>
+                <stop offset="100%" stop-color="${isSelected ? "#439BFF" : "#2D8CFF"}"/>
+              </linearGradient>
+            </defs>
+            <path d="M1.2 3.2C1.2 2.1 2.1 1.2 3.2 1.2H8.1L9.9 3.3H18.8C19.9 3.3 20.8 4.2 20.8 5.3V14.8C20.8 15.9 19.9 16.8 18.8 16.8H3.2C2.1 16.8 1.2 15.9 1.2 14.8V3.2Z"
+              fill="${isSelected ? "#499DF8" : "#2A7CE2"}"/>
+            <rect x="1.2" y="4.3" width="19.6" height="12.5" rx="2" fill="url(#mac-folder-body-${uid})"
+              stroke="${isSelected ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.16)"}" stroke-width="0.6"/>
+          </svg>
+        `;
+      }
+
+      /* ======================================================================
+         6. SUBTLE ARCHITECTURAL TOAST
+         ====================================================================== */
+      let toastTimer = null;
+      function showToast(message) {
+        const toast = document.getElementById("os-toast");
+        const textEl = document.getElementById("os-toast-text");
+        if (!toast || !textEl) return;
+        textEl.textContent = message;
+        toast.classList.remove("opacity-0");
+        toast.classList.add("opacity-100");
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toast.classList.remove("opacity-100");
+          toast.classList.add("opacity-0");
+        }, 1800);
+      }
+
+      /* ======================================================================
+         7. SELECTION, FOLDER-ONLY HISTORY & LIVE ARCHIVE SEARCH
+         ====================================================================== */
+      function selectNode(nodeId, pushHistory = true) {
+        const node = NODE_MAP[nodeId];
+        if (!node) return;
+        state.selectedNodeId = nodeId;
+        if (pushHistory) {
+          const targetFolderId = node.type === "folder" ? node.id : (PARENT_MAP[node.id] || "root");
+          const currentFolderAtIdx = state.folderHistory[state.folderHistoryIndex];
+          if (currentFolderAtIdx !== targetFolderId) {
+            state.folderHistory = state.folderHistory.slice(0, state.folderHistoryIndex + 1);
+            state.folderHistory.push(targetFolderId);
+            state.folderHistoryIndex = state.folderHistory.length - 1;
+          }
+        }
+        renderFinder();
+      }
+
+      document.getElementById("btn-nav-back").addEventListener("click", () => {
+        if (state.folderHistoryIndex > 0) {
+          state.folderHistoryIndex -= 1;
+          selectNode(state.folderHistory[state.folderHistoryIndex], false);
+        }
+      });
+
+      document.getElementById("btn-nav-forward").addEventListener("click", () => {
+        const selectedNode = NODE_MAP[state.selectedNodeId];
+        if (!selectedNode || selectedNode.type !== "folder" || !selectedNode.children || selectedNode.children.length === 0) {
+          return;
+        }
+        const nextFolderInHistory = state.folderHistory[state.folderHistoryIndex + 1];
+        if (nextFolderInHistory && PARENT_MAP[nextFolderInHistory] === selectedNode.id) {
+          state.folderHistoryIndex += 1;
+          selectNode(nextFolderInHistory, false);
+        } else {
+          selectNode(selectedNode.children[0].id, true);
+        }
+      });
+
+      function searchArchiveNodes(query) {
+        const q = query.trim().toLowerCase();
+        if (!q) return [];
+        const terms = q.split(/\s+/).filter(Boolean);
+        const matches = [];
+
+        Object.values(NODE_MAP).forEach(node => {
+          if (node.id === "root") return;
+          const pathNames = (PATH_MAP[node.id] || [])
+            .map(pid => NODE_MAP[pid]?.name || "")
+            .join(" ");
+          const haystack = `${node.name} ${node.ext || ""} ${node.kind || ""} ${node.material || ""} ${node.notes || ""} ${pathNames}`.toLowerCase();
+          const allMatch = terms.every(t => haystack.includes(t));
+          if (allMatch) {
+            matches.push(node);
+          }
+        });
+
+        matches.sort((a, b) => {
+          const aExact = a.name.toLowerCase().includes(q) ? 0 : 1;
+          const bExact = b.name.toLowerCase().includes(q) ? 0 : 1;
+          if (aExact !== bExact) return aExact - bExact;
+          if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
+          return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+        });
+
+        return matches.slice(0, 120);
+      }
+
+      /* ======================================================================
+         8. RIGHT-HAND MACOS QUICK LOOK / INSPECTOR PANE
+         ====================================================================== */
+      function buildInspectorPaneHTML(node) {
+        if (!node) {
+          return `
+            <div class="flex-1 flex items-center justify-center p-6 text-center text-white/35 text-xs">
+              Select an item to inspect.
+            </div>
+          `;
+        }
+
+        // Folder Quick Look Summary
+        if (node.type === "folder") {
+          const items = node.children || [];
+          const quickItemsHTML = items.map(child => `
+            <button data-inspector-jump="${child.id}"
+              class="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.07] text-left text-[12px] transition-colors">
+              <div class="flex items-center gap-2 min-w-0">
+                ${child.type === "folder" ? getMiniFolderSVG(false, 15) : getFileIconSVG(child.ext, 15)}
+                <span class="truncate font-medium text-white/90">${child.name}</span>
+              </div>
+              <span class="font-mono-tech text-[10px] text-white/40 shrink-0">
+                ${child.type === "folder" ? `${(child.children || []).length} items` : child.ext}
+              </span>
+            </button>
+          `).join("");
+
+          return `
+            <div class="flex-1 flex flex-col min-w-0 overflow-y-auto mac-scroll bg-[#18181A] p-4">
+              <!-- Folder Hero Emblem -->
+              <div class="w-full py-6 rounded-xl border border-white/[0.08] bg-[#1F1F22] flex flex-col items-center justify-center shrink-0">
+                ${getMiniFolderSVG(false, 56)}
+                <div class="mt-2.5 text-[14px] font-semibold text-white/95">${node.name}</div>
+                <div class="text-[11px] text-white/45 mt-0.5">Folder · ${items.length} item${items.length === 1 ? "" : "s"}</div>
+              </div>
+
+              <!-- macOS Folder Metadata -->
+              <div class="mt-3.5 py-2.5 border-y border-white/[0.08] space-y-1.5 text-[11.5px]">
+                <div class="flex justify-between gap-3">
+                  <span class="text-white/40">Kind</span>
+                  <span class="text-white/90 font-medium">Folder</span>
+                </div>
+                <div class="flex justify-between gap-3">
+                  <span class="text-white/40">Size</span>
+                  <span class="font-mono-tech text-[11px] text-white/90">${items.length} item${items.length === 1 ? "" : "s"}</span>
+                </div>
+                <div class="flex justify-between gap-3">
+                  <span class="text-white/40">Created</span>
+                  <span class="font-mono-tech text-[11px] text-white/90">${node.created || "2022-09-15"}</span>
+                </div>
+                <div class="flex justify-between gap-3">
+                  <span class="text-white/40">Modified</span>
+                  <span class="font-mono-tech text-[11px] text-white/90">${node.modified || "2025-03-13"}</span>
+                </div>
+              </div>
+
+              <!-- Directory Scope Notes -->
+              <div class="pt-3">
+                <div class="text-[10.5px] font-medium text-white/40 mb-1">Directory Scope</div>
+                <p class="text-[12px] leading-relaxed text-white/75 selectable-text">${node.notes || ""}</p>
+              </div>
+
+              <!-- Quick Contents List -->
+              <div class="pt-3 mt-3 border-t border-white/[0.08]">
+                <div class="text-[10.5px] font-medium text-white/40 mb-1.5">Contents (${items.length})</div>
+                <div class="space-y-1">${quickItemsHTML}</div>
+              </div>
+            </div>
+          `;
+        }
+
+        // File Quick Look & CAD Inspector
+        const wherePath = (PATH_MAP[node.id] || [])
+          .slice(0, -1)
+          .map(pid => NODE_MAP[pid]?.name)
+          .filter(Boolean)
+          .join(" › ");
+
+        const sliderHTML = node.interactiveParam ? `
+          <div class="mt-2.5 pt-2.5 border-t border-white/[0.08] flex items-center justify-between gap-3">
+            <label for="inspector-param-slider" class="font-mono-tech text-[10.5px] uppercase text-white/50 shrink-0">
+              ${node.interactiveParam.label}: <strong id="inspector-param-readout" class="text-[#4DA3FF]">${state.interactiveValues[node.id]}${node.interactiveParam.unit}</strong>
+            </label>
+            <input id="inspector-param-slider" type="range"
+              min="${node.interactiveParam.min}" max="${node.interactiveParam.max}" value="${state.interactiveValues[node.id]}"
+              class="w-32 accent-[#0A60FF] cursor-pointer" />
+          </div>
+        ` : "";
+
+        return `
+          <div class="flex-1 flex flex-col min-w-0 overflow-y-auto mac-scroll bg-[#18181A] p-4">
+            <!-- Architectural / Real Media Viewport -->
+            <div class="w-full aspect-[16/9] max-h-[215px] rounded-xl border border-white/[0.1] overflow-hidden bg-[#121316] shrink-0">
+              <div id="inspector-svg-container" class="w-full h-full">
+                ${buildAssetViewportHTML(node, false, "inspector-media-slot")}
+              </div>
+            </div>
+            ${sliderHTML}
+
+            <!-- File Title & Quick Look Trigger -->
+            <div class="mt-3.5 pb-3 border-b border-white/[0.08] flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="font-mono-tech text-[10.5px] text-[#4DA3FF] font-semibold">${node.iteration} · ${node.ext}</div>
+                <h2 class="text-[13.5px] font-semibold text-white/95 leading-snug mt-0.5 truncate" title="${node.name}">${node.name}</h2>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <a id="btn-inspector-raw-link" href="${getRepoFileUrl(node.relPath)}" target="_blank" rel="noopener"
+                  class="hidden liquid-pill px-2.5 py-1 rounded-full hover:bg-white/10 text-[11px] font-medium text-[#4DA3FF] transition-colors">
+                  Raw ↗
+                </a>
+                <button id="btn-inspector-quicklook"
+                  class="liquid-pill px-3 py-1 rounded-full hover:bg-white/10 text-[11px] font-medium text-white/90 transition-colors">
+                  Quick Look
+                </button>
+              </div>
+            </div>
+
+            <!-- Authentic macOS Finder Metadata -->
+            <div class="py-2.5 border-b border-white/[0.08] space-y-1.5 text-[11.5px]">
+              <div class="flex justify-between gap-3">
+                <span class="text-white/40 shrink-0">Kind</span>
+                <span class="text-white/90 font-medium text-right">${node.kind}</span>
+              </div>
+              <div class="flex justify-between gap-3">
+                <span class="text-white/40 shrink-0">Size</span>
+                <span class="font-mono-tech text-[11px] text-white/90 text-right">${node.size}</span>
+              </div>
+              <div class="flex justify-between gap-3">
+                <span class="text-white/40 shrink-0">Created</span>
+                <span class="font-mono-tech text-[11px] text-white/90 text-right">${node.created}</span>
+              </div>
+              <div class="flex justify-between gap-3">
+                <span class="text-white/40 shrink-0">Modified</span>
+                <span class="font-mono-tech text-[11px] text-white/90 text-right">${node.modified}</span>
+              </div>
+              <div class="flex justify-between gap-3">
+                <span class="text-white/40 shrink-0">Where</span>
+                <span class="text-[11px] text-white/65 text-right truncate" title="${wherePath}">${wherePath}</span>
+              </div>
+              <div class="flex justify-between gap-3">
+                <span class="text-white/40 shrink-0">Dimensions</span>
+                <span class="font-mono-tech text-[11px] text-white/90 text-right">${node.dimensions}</span>
+              </div>
+              <div class="flex justify-between gap-3">
+                <span class="text-white/40 shrink-0">Material</span>
+                <span class="text-white/85 text-right">${node.material}</span>
+              </div>
+            </div>
+
+            <!-- Engineering & Process Notes -->
+            <div class="pt-3">
+              <div class="text-[10.5px] font-medium text-white/40 mb-1">Process Notes</div>
+              <p class="text-[12px] leading-relaxed text-white/75 selectable-text">
+                ${node.notes}
+              </p>
+            </div>
+          </div>
+        `;
+      }
+
+      function bindInspectorEvents(node) {
+        if (!node) return;
+
+        document.querySelectorAll("[data-inspector-jump]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const targetId = btn.getAttribute("data-inspector-jump");
+            if (targetId) selectNode(targetId);
+          });
+        });
+
+        const qlBtn = document.getElementById("btn-inspector-quicklook");
+        if (qlBtn && node.type === "file") {
+          qlBtn.addEventListener("click", () => openQuickLook(node.id));
+        }
+
+        if (node.type === "file") {
+          probeRepoFile(node.relPath, (url) => {
+            const rawLink = document.getElementById("btn-inspector-raw-link");
+            if (rawLink) rawLink.classList.remove("hidden");
+            if (node.ext === "PDF") {
+              const slot = document.getElementById("inspector-media-slot");
+              if (slot) {
+                slot.innerHTML = `<iframe src="${url}#toolbar=0&navpanes=0" title="${node.name}" class="w-full h-full border-0 bg-white"></iframe>`;
+              }
+            }
+          });
+        }
+
+        const slider = document.getElementById("inspector-param-slider");
+        if (slider && node.type === "file") {
+          slider.addEventListener("input", (e) => {
+            const val = Number(e.target.value);
+            state.interactiveValues[node.id] = val;
+            const readout = document.getElementById("inspector-param-readout");
+            if (readout) readout.textContent = `${val}${node.interactiveParam.unit}`;
+            const svgWrap = document.getElementById("inspector-svg-container");
+            if (svgWrap) svgWrap.innerHTML = generateTechnicalSchematicSVG(node, false);
+          });
+        }
+      }
+
+      /* ======================================================================
+         9. RENDER FINDER (Top Toolbar, Recursive Miller Columns / List / Icons, Path Bar)
+         ====================================================================== */
+      function renderFinder() {
+        const selectedPathIds = getSelectedPathIds();
+        const selectedNode = NODE_MAP[state.selectedNodeId] || ARCHIVE_TREE;
+        const currentFolder = getCurrentFolderNode();
+        const isSearching = Boolean(state.searchQuery.trim());
+        const searchResults = isSearching ? searchArchiveNodes(state.searchQuery) : [];
+
+        // Back / Forward button states (Back = previous folder only; Forward = selected folder only)
+        const canGoForward = Boolean(
+          selectedNode &&
+          selectedNode.type === "folder" &&
+          Array.isArray(selectedNode.children) &&
+          selectedNode.children.length > 0
+        );
+        document.getElementById("btn-nav-back").disabled = state.folderHistoryIndex <= 0;
+        document.getElementById("btn-nav-forward").disabled = !canGoForward;
+
+        // Top Toolbar Active Folder Title (Clean macOS Finder style)
+        const titleEl = document.getElementById("finder-window-title");
+        if (isSearching) {
+          titleEl.textContent = `Searching “${state.searchQuery.trim()}”`;
+        } else {
+          titleEl.textContent = currentFolder.name || "reSEARCH";
+        }
+
+        // Bottom Interactive Breadcrumb Path Bar
+        const crumbEl = document.getElementById("finder-breadcrumb");
+        if (isSearching) {
+          crumbEl.innerHTML = `
+            <button data-crumb-id="root" class="inline-flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer">
+              ${getMiniFolderSVG(false, 13)}
+              <span>reSEARCH</span>
+            </button>
+            <span class="text-white/35 text-[10px]">›</span>
+            <span class="text-white/95 font-medium">Search Results (${searchResults.length})</span>
+          `;
+        } else {
+          crumbEl.innerHTML = selectedPathIds.map((id, idx) => {
+            const node = NODE_MAP[id];
+            const isLast = idx === selectedPathIds.length - 1;
+            const sep = idx > 0 ? `<span class="text-white/35 text-[10px]">›</span>` : "";
+            const icon = node.type === "folder" ? getMiniFolderSVG(false, 13) : getFileIconSVG(node.ext, 13);
+            return `
+              ${sep}
+              <button data-crumb-id="${node.id}"
+                class="inline-flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer ${isLast ? "text-white/95 font-medium" : "text-white/75"}">
+                ${icon}
+                <span>${node.name}</span>
+              </button>
+            `;
+          }).join("");
+        }
+
+        crumbEl.querySelectorAll("[data-crumb-id]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            clearSearchFilter(false);
+            selectNode(btn.getAttribute("data-crumb-id"));
+          });
+        });
+
+        // Bottom Centered macOS Status Bar ("X items, 192.19 GB available")
+        const metaEl = document.getElementById("finder-path-meta");
+        if (isSearching) {
+          metaEl.textContent = `${searchResults.length} item${searchResults.length === 1 ? "" : "s"} found, 192.19 GB available`;
+        } else {
+          const folderItemsCount = (currentFolder.children || []).length;
+          metaEl.textContent = selectedNode.type === "file"
+            ? `${folderItemsCount} item${folderItemsCount === 1 ? "" : "s"}, ${selectedNode.size} · 192.19 GB available`
+            : `${folderItemsCount} item${folderItemsCount === 1 ? "" : "s"}, 192.19 GB available`;
+        }
+
+        // Render Workspace Content
+        const container = document.getElementById("finder-content-area");
+
+        // --- SEARCH RESULTS VIEW ---
+        if (isSearching) {
+          const activeSearchNode = searchResults.find(n => n.id === state.selectedNodeId) || searchResults[0] || null;
+          const rowsHTML = searchResults.length > 0 ? searchResults.map(node => {
+            const isSel = activeSearchNode && activeSearchNode.id === node.id;
+            const pathLabel = (PATH_MAP[node.id] || [])
+              .slice(0, -1)
+              .map(pid => NODE_MAP[pid]?.name)
+              .filter(Boolean)
+              .join(" › ");
+            return `
+              <button data-search-node="${node.id}"
+                class="w-full flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-[7px] text-left transition-colors ${isSel ? "bg-[#0A60FF] text-white" : "text-white/90 hover:bg-white/[0.06]"}">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  ${node.type === "folder" ? getMiniFolderSVG(isSel, 16) : getFileIconSVG(node.ext, 16)}
+                  <div class="min-w-0">
+                    <div class="text-[12.5px] font-medium truncate">${node.name}</div>
+                    <div class="text-[10.5px] truncate ${isSel ? "text-white/80" : "text-white/40"}">${pathLabel}</div>
+                  </div>
+                </div>
+                <span class="font-mono-tech text-[10px] shrink-0 ${isSel ? "text-white/85" : "text-white/40"}">
+                  ${node.type === "folder" ? "Folder" : node.size}
+                </span>
+              </button>
+            `;
+          }).join("") : `
+            <div class="p-8 text-center text-[12px] text-white/40">
+              No folders or files match “${state.searchQuery}”.
+            </div>
+          `;
+
+          container.innerHTML = `
+            <div class="flex-1 flex min-w-0 overflow-hidden">
+              <div class="w-full md:w-[440px] shrink-0 miller-col p-2 overflow-y-auto mac-scroll bg-[#1B1B1D] space-y-0.5">
+                ${rowsHTML}
+              </div>
+              <div class="hidden md:flex flex-1 min-w-0 overflow-hidden">
+                ${buildInspectorPaneHTML(activeSearchNode)}
+              </div>
+            </div>
+          `;
+
+          container.querySelectorAll("[data-search-node]").forEach(btn => {
+            const id = btn.getAttribute("data-search-node");
+            btn.addEventListener("click", () => {
+              state.selectedNodeId = id;
+              renderFinder();
+            });
+            btn.addEventListener("dblclick", () => {
+              clearSearchFilter(false);
+              selectNode(id);
+            });
+          });
+          bindInspectorEvents(activeSearchNode);
+          return;
+        }
+
+        // --- VIEW MODE 1: RECURSIVE MULTI-LEVEL MILLER COLUMNS ---
+        if (state.viewMode === "columns") {
+          const folderColumns = selectedPathIds
+            .map(id => NODE_MAP[id])
+            .filter(n => n && n.type === "folder");
+
+          const columnsHTML = folderColumns.map((folderNode, colIdx) => {
+            const children = folderNode.children || [];
+            const nextSelectedId = selectedPathIds[colIdx + 1] || null;
+
+            const itemsHTML = children.length > 0 ? children.map(item => {
+              const isSelected = item.id === nextSelectedId;
+              const isFolder = item.type === "folder";
+              return `
+                <button data-miller-node="${item.id}"
+                  class="w-full flex items-center justify-between gap-2 px-2 py-[5px] rounded-[7px] text-left text-[12.5px] leading-tight transition-colors ${isSelected ? "bg-[#0A60FF] text-white font-medium" : "text-white/90 hover:bg-white/[0.06]"}">
+                  <div class="flex items-center gap-2 min-w-0">
+                    ${isFolder ? getMiniFolderSVG(isSelected, 16) : getFileIconSVG(item.ext, 16)}
+                    <span class="truncate">${item.name}</span>
+                  </div>
+                  <div class="flex items-center gap-1 shrink-0">
+                    ${isFolder
+                      ? `<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="${isSelected ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.38)"}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="4.5 2.5 8 6 4.5 9.5"/></svg>`
+                      : ""
+                    }
+                  </div>
+                </button>
+              `;
+            }).join("") : `
+              <div class="p-4 text-center text-[11px] text-white/35">Empty Folder</div>
+            `;
+
+            return `
+              <div class="miller-col w-[210px] sm:w-[224px] shrink-0 px-2 pt-1.5 pb-6 overflow-y-auto mac-scroll bg-transparent space-y-[2px]">
+                ${itemsHTML}
+              </div>
+            `;
+          }).join("");
+
+          container.innerHTML = `
+            <div id="miller-columns-scroller" class="flex-1 flex min-w-0 overflow-x-auto overflow-y-hidden bg-transparent">
+              ${columnsHTML}
+              <!-- Rightmost Quick Look / Inspector Column -->
+              <div class="min-w-[300px] flex-1 flex overflow-hidden bg-[#18181A]">
+                ${buildInspectorPaneHTML(selectedNode)}
+              </div>
+            </div>
+          `;
+
+          container.querySelectorAll("[data-miller-node]").forEach(btn => {
+            const nodeId = btn.getAttribute("data-miller-node");
+            const node = NODE_MAP[nodeId];
+            btn.addEventListener("click", () => {
+              selectNode(nodeId);
+              if (window.innerWidth < 640 && node && node.type === "file") {
+                openQuickLook(nodeId);
+              }
+            });
+            btn.addEventListener("dblclick", () => {
+              if (node && node.type === "file") {
+                openQuickLook(nodeId);
+              }
+            });
+          });
+
+          bindInspectorEvents(selectedNode);
+
+          const scroller = document.getElementById("miller-columns-scroller");
+          if (scroller && folderColumns.length > 2) {
+            requestAnimationFrame(() => {
+              scroller.scrollTo({ left: scroller.scrollWidth, behavior: "smooth" });
+            });
+          }
+
+        // --- VIEW MODE 2: LIST VIEW (Name, Date Modified, Size, Kind) ---
+        } else if (state.viewMode === "list") {
+          const items = currentFolder.children || [];
+          const activeItem = items.find(i => i.id === state.selectedNodeId) || items[0] || currentFolder;
+
+          const rowsHTML = items.map(item => {
+            const isSel = activeItem && activeItem.id === item.id;
+            const isFolder = item.type === "folder";
+            const sizeLabel = isFolder ? `${(item.children || []).length} items` : item.size;
+            const kindLabel = isFolder ? "Folder" : item.kind;
+            return `
+              <tr data-list-node="${item.id}"
+                class="border-b border-white/[0.045] cursor-default text-[12.5px] select-none ${isSel ? "bg-[#0A60FF] text-white" : "hover:bg-white/[0.05] text-white/90"}">
+                <td class="py-1.5 px-3 flex items-center gap-2 font-medium truncate max-w-[240px]">
+                  ${isFolder ? getMiniFolderSVG(isSel, 15) : getFileIconSVG(item.ext, 15)}
+                  <span class="truncate">${item.name}</span>
+                </td>
+                <td class="py-1.5 px-2.5 font-mono-tech text-[11px] whitespace-nowrap ${isSel ? "text-white/85" : "text-white/45"}">${item.modified}</td>
+                <td class="py-1.5 px-2.5 font-mono-tech text-[11px] whitespace-nowrap ${isSel ? "text-white/85" : "text-white/45"}">${sizeLabel}</td>
+                <td class="py-1.5 px-3 text-[11.5px] hidden lg:table-cell truncate max-w-[170px] ${isSel ? "text-white/90" : "text-white/45"}">${kindLabel}</td>
+              </tr>
+            `;
+          }).join("");
+
+          container.innerHTML = `
+            <div class="flex-1 flex min-w-0 overflow-hidden">
+              <div class="flex-1 overflow-y-auto mac-scroll border-r border-white/[0.08]">
+                <table class="w-full border-collapse text-left">
+                  <thead class="sticky top-0 bg-[#202023] border-b border-white/[0.08] text-[11px] text-white/50">
+                    <tr>
+                      <th class="py-1.5 px-3 font-medium">Name</th>
+                      <th class="py-1.5 px-2.5 font-medium">Date Modified</th>
+                      <th class="py-1.5 px-2.5 font-medium">Size</th>
+                      <th class="py-1.5 px-3 font-medium hidden lg:table-cell">Kind</th>
+                    </tr>
+                  </thead>
+                  <tbody>${rowsHTML}</tbody>
+                </table>
+              </div>
+              <div class="hidden md:flex w-[350px] shrink-0 overflow-hidden">
+                ${buildInspectorPaneHTML(activeItem)}
+              </div>
+            </div>
+          `;
+
+          container.querySelectorAll("[data-list-node]").forEach(row => {
+            const nodeId = row.getAttribute("data-list-node");
+            const node = NODE_MAP[nodeId];
+            row.addEventListener("click", () => {
+              if (node.type === "file") {
+                selectNode(nodeId);
+              } else {
+                state.selectedNodeId = nodeId;
+                renderFinder();
+              }
+            });
+            row.addEventListener("dblclick", () => {
+              if (node.type === "folder") {
+                selectNode(nodeId);
+              } else {
+                openQuickLook(nodeId);
+              }
+            });
+          });
+          bindInspectorEvents(activeItem);
+
+        // --- VIEW MODE 3: ICON GRID VIEW ---
+        } else {
+          const items = currentFolder.children || [];
+          const activeItem = items.find(i => i.id === state.selectedNodeId) || null;
+
+          const cardsHTML = items.map(item => {
+            const isSel = activeItem && activeItem.id === item.id;
+            const isFolder = item.type === "folder";
+
+            if (isFolder) {
+              return `
+                <div data-icon-node="${item.id}"
+                  class="p-3.5 rounded-xl transition-all cursor-default flex flex-col items-center justify-center text-center select-none ${isSel ? "bg-[#0A60FF]/25 ring-1 ring-[#0A60FF]" : "hover:bg-white/[0.05]"}">
+                  <div class="mb-2">${getMiniFolderSVG(isSel, 52)}</div>
+                  <div class="text-[12px] font-medium px-2 py-0.5 rounded-[5px] truncate max-w-full ${isSel ? "bg-[#0A60FF] text-white" : "text-white/90"}">${item.name}</div>
+                  <div class="text-[10.5px] text-white/40 mt-0.5">${(item.children || []).length} items</div>
+                </div>
+              `;
+            }
+
+            return `
+              <div data-icon-node="${item.id}"
+                class="p-2.5 rounded-xl border transition-all cursor-default flex flex-col select-none ${isSel ? "border-[#0A60FF] bg-[#0A60FF]/15 ring-1 ring-[#0A60FF]" : "border-white/[0.08] bg-[#222225] hover:border-white/20"}">
+                <div class="w-full aspect-[16/10] rounded-lg border border-white/[0.08] overflow-hidden mb-2 bg-[#121316]">
+                  ${buildAssetViewportHTML(item, false, `icon-slot-${item.id}`)}
+                </div>
+                <div class="flex items-center justify-between gap-1 font-mono-tech text-[10px] text-white/40">
+                  <span>${item.ext}</span>
+                  <span>${item.size}</span>
+                </div>
+                <div class="text-[12px] font-medium text-white/90 truncate mt-0.5">${item.name}</div>
+              </div>
+            `;
+          }).join("");
+
+          container.innerHTML = `
+            <div class="flex-1 overflow-y-auto mac-scroll p-4 bg-[#19191B]">
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                ${cardsHTML}
+              </div>
+            </div>
+          `;
+
+          container.querySelectorAll("[data-icon-node]").forEach(card => {
+            const nodeId = card.getAttribute("data-icon-node");
+            const node = NODE_MAP[nodeId];
+            card.addEventListener("click", () => {
+              if (node.type === "file") {
+                selectNode(nodeId);
+              } else {
+                state.selectedNodeId = nodeId;
+                renderFinder();
+              }
+            });
+            card.addEventListener("dblclick", () => {
+              if (node.type === "folder") {
+                selectNode(nodeId);
+              } else {
+                openQuickLook(nodeId);
+              }
+            });
+          });
+        }
+      }
+
+      /* ======================================================================
+         10. SPACEBAR / DOUBLE-CLICK QUICK LOOK MODAL
+         ====================================================================== */
+      const qlModal = document.getElementById("quicklook-modal");
+
+      function openQuickLook(fileId) {
+        const file = (NODE_MAP[fileId]?.type === "file" ? NODE_MAP[fileId] : null)
+          || (NODE_MAP[state.selectedNodeId]?.type === "file" ? NODE_MAP[state.selectedNodeId] : null)
+          || ALL_FILES[0];
+        selectNode(file.id);
+        renderQuickLookContent(file);
+        qlModal.classList.remove("hidden");
+        qlModal.classList.add("flex");
+      }
+
+      function closeQuickLook() {
+        qlModal.classList.add("hidden");
+        qlModal.classList.remove("flex");
+      }
+
+      function renderQuickLookContent(file) {
+        document.getElementById("ql-window-title").textContent = `Quick Look — ${file.name}`;
+        const body = document.getElementById("ql-window-body");
+        const parentFolder = NODE_MAP[PARENT_MAP[file.id]];
+
+        const sliderHTML = file.interactiveParam ? `
+          <div class="px-4 py-2.5 bg-[#202023] border-t border-white/[0.08] flex items-center justify-between gap-4 shrink-0">
+            <span class="font-mono-tech text-[11px] uppercase text-white/60">
+              ${file.interactiveParam.label}:
+              <strong id="ql-param-readout" class="text-[#4DA3FF]">${state.interactiveValues[file.id]}${file.interactiveParam.unit}</strong>
+            </span>
+            <input id="ql-param-slider" type="range"
+              min="${file.interactiveParam.min}" max="${file.interactiveParam.max}" value="${state.interactiveValues[file.id]}"
+              class="w-44 accent-[#0A60FF] cursor-pointer" />
+          </div>
+        ` : "";
+
+        body.innerHTML = `
+          <div class="flex-1 flex flex-col min-w-0 bg-[#121316] border-b md:border-b-0 md:border-r border-white/[0.08]">
+            <div id="ql-svg-viewport" class="flex-1 p-4 flex items-center justify-center overflow-hidden">
+              ${buildAssetViewportHTML(file, state.qlBlueprintInvert, "ql-media-slot")}
+            </div>
+            ${sliderHTML}
+          </div>
+
+          <div class="w-full md:w-[300px] shrink-0 p-4 overflow-y-auto mac-scroll bg-[#1A1A1C] flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between gap-2">
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#0A60FF]/20 border border-[#4DA3FF]/30 text-[#4DA3FF] font-mono-tech text-[11px] font-semibold">
+                  <span>${file.iteration}</span>
+                  <span>·</span>
+                  <span>${file.ext}</span>
+                  <span>·</span>
+                  <span>${file.size}</span>
+                </div>
+                <a id="btn-ql-raw-link" href="${getRepoFileUrl(file.relPath)}" target="_blank" rel="noopener"
+                  class="hidden liquid-pill px-2.5 py-0.5 rounded-full hover:bg-white/10 text-[10.5px] font-medium text-[#4DA3FF]">
+                  Open Raw ↗
+                </a>
+              </div>
+              <h2 class="text-[14.5px] font-bold text-white/95 mt-2.5 leading-snug break-all">${file.name}</h2>
+
+              <div class="my-3.5 border-t border-white/[0.08] pt-3 space-y-2 text-[12px]">
+                <div>
+                  <div class="text-[10.5px] text-white/40">Location</div>
+                  <div class="font-medium text-white/90">${parentFolder ? parentFolder.name : "reSEARCH"}</div>
+                </div>
+                <div>
+                  <div class="text-[10.5px] text-white/40">Kind</div>
+                  <div class="font-medium text-white/90">${file.kind}</div>
+                </div>
+                <div>
+                  <div class="text-[10.5px] text-white/40">Created / Modified</div>
+                  <div class="font-mono-tech text-[11px] text-white/85">${file.created} · ${file.modified}</div>
+                </div>
+                <div>
+                  <div class="text-[10.5px] text-white/40">Dimensions</div>
+                  <div class="font-mono-tech text-[11px] text-white/85">${file.dimensions}</div>
+                </div>
+                <div>
+                  <div class="text-[10.5px] text-white/40">Material / Substrate</div>
+                  <div class="text-white/85">${file.material}</div>
+                </div>
+              </div>
+
+              <div class="border-t border-white/[0.08] pt-3">
+                <div class="text-[10.5px] text-white/40 mb-1">Process Notes</div>
+                <p class="text-[12.5px] leading-relaxed text-white/75 selectable-text">${file.notes}</p>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-white/[0.08] flex items-center justify-between font-mono-tech text-[10.5px] text-white/40">
+              <span>File ${ALL_FILES.findIndex(x => x.id === file.id) + 1} of ${ALL_FILES.length}</span>
+              <span>← / → Step · Esc Close</span>
+            </div>
+          </div>
+        `;
+
+        const qlSlider = document.getElementById("ql-param-slider");
+        if (qlSlider) {
+          qlSlider.addEventListener("input", (e) => {
+            const val = Number(e.target.value);
+            state.interactiveValues[file.id] = val;
+            document.getElementById("ql-param-readout").textContent = `${val}${file.interactiveParam.unit}`;
+            document.getElementById("ql-svg-viewport").innerHTML = buildAssetViewportHTML(file, state.qlBlueprintInvert, "ql-media-slot");
+            renderFinder();
+          });
+        }
+
+        probeRepoFile(file.relPath, (url) => {
+          const rawLink = document.getElementById("btn-ql-raw-link");
+          if (rawLink) rawLink.classList.remove("hidden");
+          if (file.ext === "PDF") {
+            const slot = document.getElementById("ql-media-slot");
+            if (slot) {
+              slot.innerHTML = `<iframe src="${url}" title="${file.name}" class="w-full h-full rounded-lg border-0 bg-white"></iframe>`;
+            }
+          }
+        });
+      }
+
+      document.getElementById("btn-ql-close").addEventListener("click", closeQuickLook);
+      qlModal.addEventListener("click", (e) => {
+        if (e.target === qlModal) closeQuickLook();
+      });
+
+      document.getElementById("btn-ql-blueprint").addEventListener("click", () => {
+        state.qlBlueprintInvert = !state.qlBlueprintInvert;
+        const file = NODE_MAP[state.selectedNodeId]?.type === "file" ? NODE_MAP[state.selectedNodeId] : ALL_FILES[0];
+        renderQuickLookContent(file);
+      });
+
+      function stepQuickLook(delta) {
+        const idx = ALL_FILES.findIndex(f => f.id === state.selectedNodeId);
+        const nextIdx = (idx + delta + ALL_FILES.length) % ALL_FILES.length;
+        const nextFile = ALL_FILES[nextIdx];
+        clearSearchFilter(false);
+        selectNode(nextFile.id);
+        renderQuickLookContent(nextFile);
+      }
+
+      document.getElementById("btn-ql-prev").addEventListener("click", () => stepQuickLook(-1));
+      document.getElementById("btn-ql-next").addEventListener("click", () => stepQuickLook(1));
+
+      /* ======================================================================
+         11. TOOLBAR CONTROLS, LIVE SEARCH & KEYBOARD SHORTCUTS
+         ====================================================================== */
+      const searchInput = document.getElementById("finder-search-input");
+      const clearSearchBtn = document.getElementById("btn-clear-search");
+
+      function clearSearchFilter(rerender = true) {
+        state.searchQuery = "";
+        searchInput.value = "";
+        clearSearchBtn.classList.add("hidden");
+        clearSearchBtn.classList.remove("flex");
+        if (rerender) renderFinder();
+      }
+
+      searchInput.addEventListener("input", (e) => {
+        state.searchQuery = e.target.value;
+        if (state.searchQuery.trim()) {
+          clearSearchBtn.classList.remove("hidden");
+          clearSearchBtn.classList.add("flex");
+        } else {
+          clearSearchBtn.classList.add("hidden");
+          clearSearchBtn.classList.remove("flex");
+        }
+        renderFinder();
+      });
+
+      clearSearchBtn.addEventListener("click", () => clearSearchFilter(true));
+
+      document.querySelectorAll(".view-mode-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const mode = btn.getAttribute("data-view-mode");
+          state.viewMode = mode;
+          document.querySelectorAll(".view-mode-btn").forEach(b => {
+            const active = b.getAttribute("data-view-mode") === mode;
+            b.classList.toggle("liquid-pill-active", active);
+            b.classList.toggle("text-white", active);
+            b.classList.toggle("text-white/60", !active);
+            b.classList.toggle("border-transparent", !active);
+          });
+          renderFinder();
+        });
+      });
+
+      document.getElementById("btn-traffic-close").addEventListener("click", () => {
+        clearSearchFilter(false);
+        selectNode("root");
+        showToast("Returned to reSEARCH Root");
+      });
+
+      document.getElementById("btn-traffic-min").addEventListener("click", () => {
+        closeQuickLook();
+        clearSearchFilter(true);
+        showToast("View Cleared");
+      });
+
+      document.getElementById("btn-traffic-max").addEventListener("click", () => {
+        const win = document.getElementById("window-finder");
+        const expanded = win.classList.toggle("expanded-window");
+        showToast(expanded ? "Expanded Finder Viewport" : "Standard Finder Viewport");
+      });
+
+      window.addEventListener("keydown", (e) => {
+        const isInputFocused = document.activeElement === searchInput;
+
+        if ((e.metaKey || e.ctrlKey) && (e.key.toLowerCase() === "k" || e.key.toLowerCase() === "f")) {
+          e.preventDefault();
+          searchInput.focus();
+          searchInput.select();
+          return;
+        }
+
+        if (e.key === "Escape") {
+          if (!qlModal.classList.contains("hidden")) {
+            closeQuickLook();
+            return;
+          }
+          if (state.searchQuery) {
+            clearSearchFilter(true);
+            searchInput.blur();
+            return;
+          }
+        }
+
+        if (isInputFocused) return;
+
+        if (e.code === "Space") {
+          e.preventDefault();
+          if (qlModal.classList.contains("hidden")) {
+            if (NODE_MAP[state.selectedNodeId]?.type === "file") {
+              openQuickLook(state.selectedNodeId);
+            }
+          } else {
+            closeQuickLook();
+          }
+          return;
+        }
+
+        const isQlOpen = !qlModal.classList.contains("hidden");
+        if (isQlOpen) {
+          if (e.key === "ArrowRight") stepQuickLook(1);
+          if (e.key === "ArrowLeft") stepQuickLook(-1);
+        } else {
+          const parentId = PARENT_MAP[state.selectedNodeId];
+          const siblings = parentId ? (NODE_MAP[parentId]?.children || []) : [];
+          const idx = siblings.findIndex(s => s.id === state.selectedNodeId);
+          if (e.key === "ArrowDown" && idx >= 0 && idx < siblings.length - 1) {
+            e.preventDefault();
+            selectNode(siblings[idx + 1].id);
+          } else if (e.key === "ArrowUp" && idx > 0) {
+            e.preventDefault();
+            selectNode(siblings[idx - 1].id);
+          } else if (e.key === "ArrowLeft" && parentId && parentId !== "root") {
+            e.preventDefault();
+            selectNode(parentId);
+          } else if (e.key === "ArrowRight" && NODE_MAP[state.selectedNodeId]?.type === "folder") {
+            const firstChild = NODE_MAP[state.selectedNodeId].children?.[0];
+            if (firstChild) {
+              e.preventDefault();
+              selectNode(firstChild.id);
+            }
+          }
+        }
+      });
+
+      /* ======================================================================
+         12. INITIAL RENDER
+         ====================================================================== */
+      window.addEventListener("load", () => {
+        renderFinder();
+      });
+    })();
+  </script>
+</body>
+</html>
